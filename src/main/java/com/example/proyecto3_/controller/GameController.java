@@ -13,6 +13,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.control.Button;
 
+import java.util.List;
+
 /**
  * Controller for the game view with exception handling
  */
@@ -31,10 +33,16 @@ public class GameController {
     private Label statsLabel;
 
     @FXML
+    private Button deckButton;
+
+    @FXML
+    private Button tableCardButton;
+
+    @FXML
     private HBox humanHandBox;
 
     @FXML
-    private VBox bot1Area;
+    private HBox bot1Area;
 
     @FXML
     private VBox bot2Area;
@@ -69,7 +77,7 @@ public class GameController {
                             updateUI();
 
                             // Wait before drawing (1-2 seconds)
-                            new DrawCardHandler().run();
+                            new Thread(new DrawCardHandler()).start();
                         }
                     } catch (InvalidMoveException e) {
                         showAlert("Error", "Machine player made an invalid move: " + e.getMessage());
@@ -130,6 +138,31 @@ public class GameController {
         }
     }
 
+    @FXML
+    private void onDrawFromDeck() {
+        try {
+            Player current = game.getCurrentPlayer();
+            if (current.isMachine()) {
+                showAlert("Turno inválido", "Espera tu turno.");
+                return;
+            }
+
+            if (current.getHand().size() >= 4) {
+                showAlert("No puedes robar aún", "Primero debes jugar una carta.");
+                return;
+            }
+
+            game.drawCard();
+            updateUI();
+
+            game.nextTurn();
+            processTurn();
+
+        } catch (DeckEmptyException e) {
+            showAlert("Mazo vacío", "No hay más cartas disponibles.");
+        }
+    }
+
     /**
      * Configures UI visibility based on number of bots
      */
@@ -176,6 +209,22 @@ public class GameController {
         }
 
         updateHumanHand();
+        updateBotHands();
+        updateTableArea();
+    }
+
+    private void updateTableArea() {
+        if (game.getTopCard() != null && tableCardButton != null) {
+            tableCardButton.setText(game.getTopCard().toString());
+        } else if (tableCardButton != null) {
+            tableCardButton.setText("Mesa vacía");
+        }
+
+        if (deckButton != null) {
+            int deckSize = game.getDeckSize();
+            deckButton.setText("🂠 (" + deckSize + ")");
+            deckButton.setDisable(deckSize == 0);
+        }
     }
 
     /**
@@ -190,7 +239,7 @@ public class GameController {
         for (Card card : human.getHand()) {
             Button cardButton = new Button(card.toString());
             cardButton.setOnAction(e -> onCardClicked(card));
-            cardButton.setStyle("-fx-min-width: 60; -fx-min-height: 80; -fx-font-size: 20;");
+            cardButton.setStyle("-fx-min-width: 40; -fx-min-height: 60; -fx-font-size: 10;");
             humanHandBox.getChildren().add(cardButton);
         }
     }
@@ -207,9 +256,7 @@ public class GameController {
                 return;
             }
 
-            // Try to play the card
             game.playCard(card);
-            game.drawCard();
             game.nextTurn();
 
             updateUI();
@@ -279,14 +326,48 @@ public class GameController {
         }
     }
 
-    /**
-     * Shows an alert dialog
-     */
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    /**
+     * Updates the bots' hand displays
+     */
+    private void updateBotHands() {
+        List<Player> players = game.getPlayers();
+
+        if (bot1Area != null && players.size() > 1) {
+            bot1Area.getChildren().clear();
+            Player bot1 = players.get(1);
+            for (int i = 0; i < bot1.getHand().size(); i++) {
+                Button hiddenCard = new Button("?");
+                hiddenCard.setStyle("-fx-min-width: 40; -fx-min-height: 60; -fx-font-size: 16;");
+                bot1Area.getChildren().add(hiddenCard);
+            }
+        }
+
+        if (bot2Area != null && players.size() > 2) {
+            bot2Area.getChildren().clear();
+            Player bot2 = players.get(2);
+            for (int i = 0; i < bot2.getHand().size(); i++) {
+                Button hiddenCard = new Button("?");
+                hiddenCard.setStyle("-fx-min-width: 40; -fx-min-height: 60; -fx-font-size: 16;");
+                bot2Area.getChildren().add(hiddenCard);
+            }
+        }
+
+        if (bot3Area != null && players.size() > 3) {
+            bot3Area.getChildren().clear();
+            Player bot3 = players.get(3);
+            for (int i = 0; i < bot3.getHand().size(); i++) {
+                Button hiddenCard = new Button("?");
+                hiddenCard.setStyle("-fx-min-width: 40; -fx-min-height: 60; -fx-font-size: 16;");
+                bot3Area.getChildren().add(hiddenCard);
+            }
+        }
     }
 }

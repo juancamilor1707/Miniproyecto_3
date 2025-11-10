@@ -289,4 +289,13 @@ public class GameModel {
         }
         return null;
     }
+
+    public int getDeckSize() {
+        return deck.size();
+    }
+
+    public boolean isDeckEmpty() {
+        return deck.isEmpty();
+    }
+
 }

@@ -4,13 +4,13 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.text.Text?>
 
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/24.0.1" fx:controller="com.example.proyecto3_.controller.OptionsController" prefHeight="500" prefWidth="768.0">
+<AnchorPane prefHeight="500" prefWidth="768.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.proyecto3_.controller.OptionsController">
 
     <Text layoutX="230" layoutY="100" style="-fx-font-size: 28; -fx-font-weight: bold;" text="Select Number of Bots" />
 
-    <Button layoutX="290" layoutY="150" onAction="#handleStartGame" text="Play against 1 Bot" userData="1" />
-    <Button layoutX="290" layoutY="210" onAction="#handleStartGame" text="Play against 2 Bots" userData="2" />
-    <Button layoutX="290" layoutY="270" onAction="#handleStartGame" text="Play against 3 Bots" userData="3" />
-    <Button layoutX="290" layoutY="350" onAction="#goBackToMenu" text="Back to Menu" />
+    <Button layoutX="320.0" layoutY="130.0" onAction="#handleStartGame" prefHeight="40.0" prefWidth="115.0" text="Play against 1 Bot" userData="1" />
+    <Button layoutX="320.0" layoutY="210.0" onAction="#handleStartGame" prefHeight="40.0" prefWidth="115.0" text="Play against 2 Bots" userData="2" />
+    <Button layoutX="320.0" layoutY="281.0" onAction="#handleStartGame" prefHeight="40.0" prefWidth="115.0" text="Play against 3 Bots" userData="3" />
+    <Button layoutX="14.0" layoutY="461.0" onAction="#goBackToMenu" text="Back to Menu" />
 
 </AnchorPane>
