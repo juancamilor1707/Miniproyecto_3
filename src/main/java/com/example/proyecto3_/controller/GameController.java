@@ -10,13 +10,14 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 import javafx.scene.control.Button;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 import java.util.List;
 
 /**
- * Controller for the game view with exception handling
+ * Controller for the game view with exception handling and card images
  */
 public class GameController {
 
@@ -45,19 +46,20 @@ public class GameController {
     private HBox bot1Area;
 
     @FXML
-    private VBox bot2Area;
+    private HBox bot2Area;
 
     @FXML
-    private VBox bot3Area;
+    private HBox bot3Area;
 
     private GameModel game;
+    private boolean isMachineTurnRunning = false;
+
 
     /**
      * Inner class to handle machine player turns
      */
     private class MachineTurnHandler implements Runnable {
-        private Player machine;
-        private Card selectedCard;
+        private final Player machine;
 
         public MachineTurnHandler(Player machine) {
             this.machine = machine;
@@ -66,29 +68,71 @@ public class GameController {
         @Override
         public void run() {
             try {
-                // Simulate thinking time (2-4 seconds)
+                // PASO 1: Delay para "pensar" qué carta jugar (2-4 segundos)
                 Thread.sleep(2000 + (int)(Math.random() * 2000));
 
                 Platform.runLater(() -> {
                     try {
-                        selectedCard = machine.selectCard(game.getTableSum());
-                        if (selectedCard != null) {
-                            game.playCard(selectedCard);
-                            updateUI();
-
-                            // Wait before drawing (1-2 seconds)
-                            new Thread(new DrawCardHandler()).start();
+                        if (!machine.canPlay(game.getTableSum())) {
+                            isMachineTurnRunning = false;
+                            handlePlayerElimination();
+                            return;
                         }
+
+                        Card selectedCard = machine.selectCard(game.getTableSum());
+
+                        if (selectedCard == null) {
+                            isMachineTurnRunning = false;
+                            handlePlayerElimination();
+                            return;
+                        }
+
+                        game.playCard(selectedCard);
+                        updateUI();
+
+                        new Thread(() -> {
+                            try {
+                                Thread.sleep(1000 + (int)(Math.random() * 1000));
+
+                                Platform.runLater(() -> {
+                                    try {
+                                        if (!game.isDeckEmpty()) {
+                                            game.drawCard();
+                                            updateUI();
+                                        }
+
+
+                                        game.nextTurn();
+                                        isMachineTurnRunning = false;
+                                        processTurn();
+
+                                    } catch (DeckEmptyException e) {
+                                        showAlert("Mazo vacío", "No hay más cartas disponibles.");
+                                        game.nextTurn();
+                                        isMachineTurnRunning = false;
+                                        processTurn();
+                                    }
+                                });
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                                isMachineTurnRunning = false;
+                            }
+                        }).start();
+
                     } catch (InvalidMoveException e) {
-                        showAlert("Error", "Machine player made an invalid move: " + e.getMessage());
+                        showAlert("Error", "Movimiento inválido: " + e.getMessage());
+                        isMachineTurnRunning = false;
                         handlePlayerElimination();
                     }
                 });
+
             } catch (InterruptedException e) {
                 e.printStackTrace();
+                isMachineTurnRunning = false;
             }
         }
     }
+
 
     /**
      * Inner class to handle drawing cards
@@ -163,6 +207,7 @@ public class GameController {
         }
     }
 
+
     /**
      * Configures UI visibility based on number of bots
      */
@@ -213,22 +258,36 @@ public class GameController {
         updateTableArea();
     }
 
+    /**
+     * Updates the table area with card images
+     */
     private void updateTableArea() {
+
         if (game.getTopCard() != null && tableCardButton != null) {
-            tableCardButton.setText(game.getTopCard().toString());
+            Card topCard = game.getTopCard();
+            ImageView cardImage = createCardImageView(topCard, 60, 80);
+            tableCardButton.setGraphic(cardImage);
+            tableCardButton.setText("");
+            tableCardButton.setStyle("-fx-background-color: transparent; -fx-padding: 0;");
         } else if (tableCardButton != null) {
             tableCardButton.setText("Mesa vacía");
+            tableCardButton.setGraphic(null);
         }
+
 
         if (deckButton != null) {
             int deckSize = game.getDeckSize();
-            deckButton.setText("🂠 (" + deckSize + ")");
+            ImageView deckImage = createCardBackImageView(60, 80);
+            deckButton.setGraphic(deckImage);
+            deckButton.setText("(" + deckSize + ")");
+            deckButton.setStyle("-fx-background-color: transparent; -fx-padding: 5;");
             deckButton.setDisable(deckSize == 0);
         }
     }
 
+
     /**
-     * Updates the human player's hand display
+     * Updates the human player's hand display with card images
      */
     private void updateHumanHand() {
         if (humanHandBox == null) return;
@@ -237,9 +296,8 @@ public class GameController {
 
         Player human = game.getPlayers().get(0);
         for (Card card : human.getHand()) {
-            Button cardButton = new Button(card.toString());
+            Button cardButton = createCardButton(card);
             cardButton.setOnAction(e -> onCardClicked(card));
-            cardButton.setStyle("-fx-min-width: 40; -fx-min-height: 60; -fx-font-size: 10;");
             humanHandBox.getChildren().add(cardButton);
         }
     }
@@ -256,6 +314,7 @@ public class GameController {
                 return;
             }
 
+            // Try to play the card
             game.playCard(card);
             game.nextTurn();
 
@@ -287,7 +346,12 @@ public class GameController {
             }
 
             if (currentPlayer.isMachine()) {
-                new Thread(new MachineTurnHandler(currentPlayer)).start();
+                if (!isMachineTurnRunning) {
+                    isMachineTurnRunning = true;
+                    new Thread(() -> {
+                        new MachineTurnHandler(currentPlayer).run();
+                    }).start();
+                }
             }
 
             updateUI();
@@ -296,6 +360,7 @@ public class GameController {
             showAlert("Game Error", e.getMessage());
         }
     }
+
 
     /**
      * Handles player elimination
@@ -326,6 +391,9 @@ public class GameController {
         }
     }
 
+    /**
+     * Shows an alert dialog
+     */
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
@@ -335,7 +403,7 @@ public class GameController {
     }
 
     /**
-     * Updates the bots' hand displays
+     * Updates the bots' hand displays with card back images
      */
     private void updateBotHands() {
         List<Player> players = game.getPlayers();
@@ -344,9 +412,8 @@ public class GameController {
             bot1Area.getChildren().clear();
             Player bot1 = players.get(1);
             for (int i = 0; i < bot1.getHand().size(); i++) {
-                Button hiddenCard = new Button("?");
-                hiddenCard.setStyle("-fx-min-width: 40; -fx-min-height: 60; -fx-font-size: 16;");
-                bot1Area.getChildren().add(hiddenCard);
+                ImageView cardBack = createCardBackImageView(60, 80);
+                bot1Area.getChildren().add(cardBack);
             }
         }
 
@@ -354,9 +421,8 @@ public class GameController {
             bot2Area.getChildren().clear();
             Player bot2 = players.get(2);
             for (int i = 0; i < bot2.getHand().size(); i++) {
-                Button hiddenCard = new Button("?");
-                hiddenCard.setStyle("-fx-min-width: 40; -fx-min-height: 60; -fx-font-size: 16;");
-                bot2Area.getChildren().add(hiddenCard);
+                ImageView cardBack = createCardBackImageView(60, 80);
+                bot2Area.getChildren().add(cardBack);
             }
         }
 
@@ -364,10 +430,109 @@ public class GameController {
             bot3Area.getChildren().clear();
             Player bot3 = players.get(3);
             for (int i = 0; i < bot3.getHand().size(); i++) {
-                Button hiddenCard = new Button("?");
-                hiddenCard.setStyle("-fx-min-width: 40; -fx-min-height: 60; -fx-font-size: 16;");
-                bot3Area.getChildren().add(hiddenCard);
+                ImageView cardBack = createCardBackImageView(60, 80);
+                bot3Area.getChildren().add(cardBack);
             }
+        }
+    }
+
+    /**
+     * Creates a clickable card button with image
+     */
+    private Button createCardButton(Card card) {
+        Button button = new Button();
+        button.setStyle("-fx-background-color: transparent; -fx-padding: 0; -fx-cursor: hand;");
+
+        ImageView imageView = createCardImageView(card, 60, 80);
+        button.setGraphic(imageView);
+
+        //hover effects
+        button.setOnMouseEntered(e -> {
+            imageView.setFitWidth(70);
+            imageView.setFitHeight(90);
+        });
+
+        button.setOnMouseExited(e -> {
+            imageView.setFitWidth(60);
+            imageView.setFitHeight(80);
+        });
+
+        return button;
+    }
+
+    /**
+     * Creates an ImageView for a card
+     */
+    private ImageView createCardImageView(Card card, double width, double height) {
+        String imageName = getCardImageName(card);
+        String imagePath = "/com/example/proyecto3_/Img/" + imageName + ".png";
+
+        try {
+            Image image = new Image(getClass().getResourceAsStream(imagePath));
+            ImageView imageView = new ImageView(image);
+            imageView.setFitWidth(width);
+            imageView.setFitHeight(height);
+            imageView.setPreserveRatio(true);
+            return imageView;
+        } catch (Exception e) {
+            System.err.println("Error loading image: " + imagePath);
+            e.printStackTrace();
+            // Fallback: crear ImageView vacío
+            ImageView fallback = new ImageView();
+            fallback.setFitWidth(width);
+            fallback.setFitHeight(height);
+            return fallback;
+        }
+    }
+
+    /**
+     * Creates an ImageView for card back (Reverso.png)
+     */
+    private ImageView createCardBackImageView(double width, double height) {
+        String imagePath = "/com/example/proyecto3_/Img/Reverso.png";
+
+        try {
+            Image image = new Image(getClass().getResourceAsStream(imagePath));
+            ImageView imageView = new ImageView(image);
+            imageView.setFitWidth(width);
+            imageView.setFitHeight(height);
+            imageView.setPreserveRatio(true);
+            return imageView;
+        } catch (Exception e) {
+            System.err.println("Error loading card back image: " + imagePath);
+            e.printStackTrace();
+            ImageView fallback = new ImageView();
+            fallback.setFitWidth(width);
+            fallback.setFitHeight(height);
+            return fallback;
+        }
+    }
+
+    /**
+     * Converts card to image filename
+     * Example: Card("7", "Diamonds") -> "7_Diamantes"
+     */
+    private String getCardImageName(Card card) {
+        String rank = card.getRank();
+        String suit = translateSuit(card.getSuit());
+        return rank + "_" + suit;
+    }
+
+    /**
+     * Translates English suit names to Spanish for image filenames
+     */
+    private String translateSuit(String suit) {
+        switch (suit.toLowerCase()) {
+            case "hearts":
+                return "Corazones";
+            case "diamonds":
+                return "Diamantes";
+            case "clubs":
+                return "Trebol";
+            case "spades":
+                return "Picas";
+            default:
+                return suit;
         }
     }
 }

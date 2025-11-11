@@ -4,16 +4,18 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.VBox?>
 
 <AnchorPane prefHeight="400.0" prefWidth="687.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.proyecto3_.controller.GameController">
    <children>
       <HBox fx:id="bot1Area" layoutX="264.0" layoutY="14.0" prefHeight="60.0" prefWidth="160.0" />
-      <VBox fx:id="bot2Area" layoutX="14.0" layoutY="88.0" prefHeight="160.0" prefWidth="40.0" />
-      <VBox fx:id="bot3Area" layoutX="633.0" layoutY="88.0" prefHeight="160.0" prefWidth="40.0" />
       <HBox fx:id="humanHandBox" layoutX="264.0" layoutY="326.0" prefHeight="60.0" prefWidth="160.0" />
-      <Label fx:id="currentTurnLabel" layoutX="22.0" layoutY="14.0" text="Hola" />
+      <Label fx:id="currentTurnLabel" layoutX="22.0" layoutY="14.0" text="Turn" />
       <Button fx:id="tableCardButton" layoutX="323.0" layoutY="188.0" mnemonicParsing="false" text="Card" />
       <Button fx:id="deckButton" layoutX="589.0" layoutY="326.0" mnemonicParsing="false" onAction="#onDrawFromDeck" text="Draw" />
+      <HBox fx:id="bot2Area" layoutX="14.0" layoutY="158.0" prefHeight="60.0" prefWidth="160.0" />
+      <HBox fx:id="bot3Area" layoutX="513.0" layoutY="158.0" prefHeight="60.0" prefWidth="160.0" />
+      <Label fx:id="statsLabel" layoutX="568.0" layoutY="14.0" text="Stats" />
+      <Label fx:id="tableSumLabel" layoutX="568.0" layoutY="44.0" text="tableSum" />
+      <Label fx:id="topCardLabel" layoutX="568.0" layoutY="74.0" text="topCard" />
    </children>
 </AnchorPane>
