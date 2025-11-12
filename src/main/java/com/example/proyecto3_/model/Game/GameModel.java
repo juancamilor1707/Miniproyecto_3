@@ -186,33 +186,43 @@ public class GameModel {
     public Card drawCard() throws DeckEmptyException {
         // Check if deck is empty
         if (deck.isEmpty()) {
+            System.out.println("⚠️ Deck vacío. Reciclando cartas de la mesa...");
             recycleDeck();
 
             // If still empty after recycling, throw exception
             if (deck.isEmpty()) {
+                System.out.println("❌ No hay cartas para reciclar. Deck sigue vacío.");
                 throw new DeckEmptyException("Cannot draw card: deck is empty even after recycling");
             }
+            System.out.println("✅ Reciclaje exitoso. Cartas en deck: " + deck.size());
         }
 
         Card card = deck.drawCard();
         if (card != null) {
             getCurrentPlayer().addCard(card);
+            System.out.println(getCurrentPlayer().getName() + " robó una carta. Cartas en mano: " + getCurrentPlayer().getHand().size());
         }
         return card;
     }
+
 
     /**
      * Recycles cards from table to deck (except the last one)
      */
     private void recycleDeck() {
+        System.out.println("🔄 Iniciando reciclaje. Cartas en mesa: " + tableCards.size());
+
         if (tableCards.size() <= 1) {
+            System.out.println("⚠️ Solo hay " + tableCards.size() + " carta(s) en la mesa. No se puede reciclar.");
             return;
         }
 
         // Take all cards except the last one
         List<Card> cardsToRecycle = new ArrayList<>();
         for (int i = 0; i < tableCards.size() - 1; i++) {
-            cardsToRecycle.add(tableCards.get(i));
+            Card card = tableCards.get(i);
+            card.setFaceUp(false);
+            cardsToRecycle.add(card);
         }
 
         // Keep only the last card on table
@@ -220,11 +230,12 @@ public class GameModel {
         tableCards.clear();
         tableCards.add(lastCard);
 
-        // Add cards to deck and shuffle
         deck.addCards(cardsToRecycle);
         deck.shuffle();
-    }
 
+        System.out.println("✅ Reciclaje completado. " + cardsToRecycle.size() + " cartas agregadas al deck.");
+        System.out.println("📊 Estado: Mesa=" + tableCards.size() + " carta(s), Deck=" + deck.size() + " cartas");
+    }
     /**
      * Moves to the next player's turn
      */

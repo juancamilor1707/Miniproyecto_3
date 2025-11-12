@@ -17,7 +17,7 @@ import javafx.scene.image.ImageView;
 import java.util.List;
 
 /**
- * Controller for the game view with exception handling and card images
+ * Controller for the game view with manual turn completion
  */
 public class GameController {
 
@@ -54,6 +54,8 @@ public class GameController {
     private GameModel game;
     private boolean isMachineTurnRunning = false;
 
+    private boolean humanHasPlayedCard = false;
+    private boolean humanHasDrawnCard = false;
 
     /**
      * Inner class to handle machine player turns
@@ -68,7 +70,6 @@ public class GameController {
         @Override
         public void run() {
             try {
-                // PASO 1: Delay para "pensar" qué carta jugar (2-4 segundos)
                 Thread.sleep(2000 + (int)(Math.random() * 2000));
 
                 Platform.runLater(() -> {
@@ -96,18 +97,15 @@ public class GameController {
 
                                 Platform.runLater(() -> {
                                     try {
-                                        if (!game.isDeckEmpty()) {
-                                            game.drawCard();
-                                            updateUI();
-                                        }
-
+                                        game.drawCard();
+                                        updateUI();
 
                                         game.nextTurn();
                                         isMachineTurnRunning = false;
                                         processTurn();
 
                                     } catch (DeckEmptyException e) {
-                                        showAlert("Mazo vacío", "No hay más cartas disponibles.");
+                                        System.err.println("Bot no pudo robar: " + e.getMessage());
                                         game.nextTurn();
                                         isMachineTurnRunning = false;
                                         processTurn();
@@ -120,7 +118,7 @@ public class GameController {
                         }).start();
 
                     } catch (InvalidMoveException e) {
-                        showAlert("Error", "Movimiento inválido: " + e.getMessage());
+                        System.err.println("Bot movimiento inválido: " + e.getMessage());
                         isMachineTurnRunning = false;
                         handlePlayerElimination();
                     }
@@ -133,34 +131,6 @@ public class GameController {
         }
     }
 
-
-    /**
-     * Inner class to handle drawing cards
-     */
-    private class DrawCardHandler implements Runnable {
-        @Override
-        public void run() {
-            new Thread(() -> {
-                try {
-                    Thread.sleep(1000 + (int)(Math.random() * 1000));
-
-                    Platform.runLater(() -> {
-                        try {
-                            game.drawCard();
-                            game.nextTurn();
-                            updateUI();
-                            processTurn();
-                        } catch (DeckEmptyException e) {
-                            showAlert("Error", "Deck is empty: " + e.getMessage());
-                        }
-                    });
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }).start();
-        }
-    }
-
     /**
      * Initializes the game controller
      */
@@ -168,7 +138,6 @@ public class GameController {
     public void initialize() {
         try {
             int numBots = GameConfig.getInstance().getNumBots();
-
             configureUIForBots(numBots);
 
             game = new GameModel(numBots);
@@ -178,35 +147,39 @@ public class GameController {
             processTurn();
 
         } catch (InvalidGameStateException e) {
-            showAlert("Game Error", "Failed to initialize game: " + e.getMessage());
+            System.err.println("Error inicializando juego: " + e.getMessage());
         }
     }
+
 
     @FXML
     private void onDrawFromDeck() {
         try {
             Player current = game.getCurrentPlayer();
-            if (current.isMachine()) {
-                showAlert("Turno inválido", "Espera tu turno.");
-                return;
-            }
 
-            if (current.getHand().size() >= 4) {
-                showAlert("No puedes robar aún", "Primero debes jugar una carta.");
+            if (current.isMachine() || !humanHasPlayedCard || humanHasDrawnCard) {
                 return;
             }
 
             game.drawCard();
+            humanHasDrawnCard = true;
             updateUI();
+
+            humanHasPlayedCard = false;
+            humanHasDrawnCard = false;
 
             game.nextTurn();
             processTurn();
 
         } catch (DeckEmptyException e) {
-            showAlert("Mazo vacío", "No hay más cartas disponibles.");
+            System.err.println("Error al robar carta: " + e.getMessage());
+
+            humanHasPlayedCard = false;
+            humanHasDrawnCard = false;
+            game.nextTurn();
+            processTurn();
         }
     }
-
 
     /**
      * Configures UI visibility based on number of bots
@@ -241,7 +214,17 @@ public class GameController {
         }
 
         if (currentTurnLabel != null) {
-            currentTurnLabel.setText("Turn: " + game.getCurrentPlayer().getName());
+            String turnText = "Turn: " + game.getCurrentPlayer().getName();
+
+            if (!game.getCurrentPlayer().isMachine()) {
+                if (!humanHasPlayedCard) {
+                    turnText += " - Play a card";
+                } else if (!humanHasDrawnCard) {
+                    turnText += " - Draw from deck";
+                }
+            }
+
+            currentTurnLabel.setText(turnText);
         }
 
         if (statsLabel != null) {
@@ -262,29 +245,25 @@ public class GameController {
      * Updates the table area with card images
      */
     private void updateTableArea() {
-
         if (game.getTopCard() != null && tableCardButton != null) {
             Card topCard = game.getTopCard();
-            ImageView cardImage = createCardImageView(topCard, 60, 80);
+            ImageView cardImage = createCardImageView(topCard, 100, 120);
             tableCardButton.setGraphic(cardImage);
             tableCardButton.setText("");
             tableCardButton.setStyle("-fx-background-color: transparent; -fx-padding: 0;");
         } else if (tableCardButton != null) {
-            tableCardButton.setText("Mesa vacía");
+            tableCardButton.setText("Empty Table");
             tableCardButton.setGraphic(null);
         }
 
-
         if (deckButton != null) {
             int deckSize = game.getDeckSize();
-            ImageView deckImage = createCardBackImageView(60, 80);
+            ImageView deckImage = createCardBackImageView(100, 120);
             deckButton.setGraphic(deckImage);
             deckButton.setText("(" + deckSize + ")");
             deckButton.setStyle("-fx-background-color: transparent; -fx-padding: 5;");
-            deckButton.setDisable(deckSize == 0);
         }
     }
-
 
     /**
      * Updates the human player's hand display with card images
@@ -309,22 +288,17 @@ public class GameController {
         try {
             Player currentPlayer = game.getCurrentPlayer();
 
-            if (currentPlayer.isMachine()) {
-                showAlert("Not your turn!", "Wait for your turn to play.");
+            if (currentPlayer.isMachine() || humanHasPlayedCard) {
                 return;
             }
 
-            // Try to play the card
             game.playCard(card);
-            game.nextTurn();
+            humanHasPlayedCard = true;
 
             updateUI();
-            processTurn();
 
         } catch (InvalidMoveException e) {
-            showAlert("Invalid Move", e.getMessage());
-        } catch (DeckEmptyException e) {
-            showAlert("Deck Empty", e.getMessage());
+            System.err.println("Movimiento inválido: " + e.getMessage());
         }
     }
 
@@ -333,14 +307,15 @@ public class GameController {
      */
     private void processTurn() {
         try {
-            Player currentPlayer = game.getCurrentPlayer();
-
             if (game.isGameOver()) {
                 showWinner();
                 return;
             }
 
+            Player currentPlayer = game.getCurrentPlayer();
+
             if (!currentPlayer.canPlay(game.getTableSum())) {
+                System.out.println(currentPlayer.getName() + " no puede jugar ninguna carta. Eliminando...");
                 handlePlayerElimination();
                 return;
             }
@@ -352,24 +327,41 @@ public class GameController {
                         new MachineTurnHandler(currentPlayer).run();
                     }).start();
                 }
+            } else {
+                humanHasPlayedCard = false;
+                humanHasDrawnCard = false;
             }
 
             updateUI();
 
         } catch (InvalidGameStateException e) {
-            showAlert("Game Error", e.getMessage());
+            System.err.println("Error de estado del juego: " + e.getMessage());
         }
     }
-
 
     /**
      * Handles player elimination
      */
     private void handlePlayerElimination() {
         try {
+            String playerName = game.getCurrentPlayer().getName();
             game.eliminateCurrentPlayer();
+            System.out.println(playerName + " ha sido eliminado.");
+
+            if (!game.getCurrentPlayer().isMachine()) {
+                humanHasPlayedCard = false;
+                humanHasDrawnCard = false;
+            }
+
+            game.nextTurn();
+            processTurn();
+
         } catch (NoValidCardException e) {
-            showAlert("Player Eliminated", e.getMessage());
+            System.out.println("Jugador eliminado: " + e.getMessage());
+
+            humanHasPlayedCard = false;
+            humanHasDrawnCard = false;
+
             game.nextTurn();
             processTurn();
         }
@@ -382,24 +374,16 @@ public class GameController {
         Player winner = game.getWinner();
         if (winner != null) {
             GameModel.GameStats stats = game.getStats();
-            showAlert(
-                    "Game Over!",
-                    winner.getName() + " wins!\n\n" +
-                            "Total Turns: " + stats.getTotalTurns() + "\n" +
-                            "Cards Played: " + stats.getCardsPlayed()
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Game Over!");
+            alert.setHeaderText(winner.getName() + " WINS!");
+            alert.setContentText(
+                    "Total Turns: " + stats.getTotalTurns() + "\n" +
+                            "Cards Played: " + stats.getCardsPlayed() + "\n" +
+                            "Players Eliminated: " + stats.getPlayersEliminated()
             );
+            alert.showAndWait();
         }
-    }
-
-    /**
-     * Shows an alert dialog
-     */
-    private void showAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
     }
 
     /**
@@ -411,27 +395,33 @@ public class GameController {
         if (bot1Area != null && players.size() > 1) {
             bot1Area.getChildren().clear();
             Player bot1 = players.get(1);
-            for (int i = 0; i < bot1.getHand().size(); i++) {
-                ImageView cardBack = createCardBackImageView(60, 80);
-                bot1Area.getChildren().add(cardBack);
+            if (!bot1.isEliminated()) {
+                for (int i = 0; i < bot1.getHand().size(); i++) {
+                    ImageView cardBack = createCardBackImageView(100, 120);
+                    bot1Area.getChildren().add(cardBack);
+                }
             }
         }
 
         if (bot2Area != null && players.size() > 2) {
             bot2Area.getChildren().clear();
             Player bot2 = players.get(2);
-            for (int i = 0; i < bot2.getHand().size(); i++) {
-                ImageView cardBack = createCardBackImageView(60, 80);
-                bot2Area.getChildren().add(cardBack);
+            if (!bot2.isEliminated()) {
+                for (int i = 0; i < bot2.getHand().size(); i++) {
+                    ImageView cardBack = createCardBackImageView(100, 120);
+                    bot2Area.getChildren().add(cardBack);
+                }
             }
         }
 
         if (bot3Area != null && players.size() > 3) {
             bot3Area.getChildren().clear();
             Player bot3 = players.get(3);
-            for (int i = 0; i < bot3.getHand().size(); i++) {
-                ImageView cardBack = createCardBackImageView(60, 80);
-                bot3Area.getChildren().add(cardBack);
+            if (!bot3.isEliminated()) {
+                for (int i = 0; i < bot3.getHand().size(); i++) {
+                    ImageView cardBack = createCardBackImageView(100, 120);
+                    bot3Area.getChildren().add(cardBack);
+                }
             }
         }
     }
@@ -443,18 +433,17 @@ public class GameController {
         Button button = new Button();
         button.setStyle("-fx-background-color: transparent; -fx-padding: 0; -fx-cursor: hand;");
 
-        ImageView imageView = createCardImageView(card, 60, 80);
+        ImageView imageView = createCardImageView(card, 100, 120);
         button.setGraphic(imageView);
 
-        //hover effects
         button.setOnMouseEntered(e -> {
-            imageView.setFitWidth(70);
-            imageView.setFitHeight(90);
+            imageView.setFitWidth(110);
+            imageView.setFitHeight(130);
         });
 
         button.setOnMouseExited(e -> {
-            imageView.setFitWidth(60);
-            imageView.setFitHeight(80);
+            imageView.setFitWidth(100);
+            imageView.setFitHeight(120);
         });
 
         return button;
@@ -476,8 +465,6 @@ public class GameController {
             return imageView;
         } catch (Exception e) {
             System.err.println("Error loading image: " + imagePath);
-            e.printStackTrace();
-            // Fallback: crear ImageView vacío
             ImageView fallback = new ImageView();
             fallback.setFitWidth(width);
             fallback.setFitHeight(height);
@@ -500,7 +487,6 @@ public class GameController {
             return imageView;
         } catch (Exception e) {
             System.err.println("Error loading card back image: " + imagePath);
-            e.printStackTrace();
             ImageView fallback = new ImageView();
             fallback.setFitWidth(width);
             fallback.setFitHeight(height);
@@ -510,7 +496,6 @@ public class GameController {
 
     /**
      * Converts card to image filename
-     * Example: Card("7", "Diamonds") -> "7_Diamantes"
      */
     private String getCardImageName(Card card) {
         String rank = card.getRank();
