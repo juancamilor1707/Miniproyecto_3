@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane prefHeight="768.0" prefWidth="1321.0" styleClass="boardView" stylesheets="@Css/Styles.css" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.proyecto3_.controller.GameController">
+   <children>
+      <HBox fx:id="bot1Area" layoutX="526.0" layoutY="103.0" prefHeight="120.0" prefWidth="270.0" />
+      <HBox fx:id="humanHandBox" layoutX="531.0" layoutY="573.0" prefHeight="120.0" prefWidth="270.0" />
+      <Label fx:id="currentTurnLabel" layoutX="87.0" layoutY="37.0" text="Turn" textFill="WHITE">
+         <font>
+            <Font name="Acme Regular" size="24.0" />
+         </font></Label>
+      <Button fx:id="tableCardButton" layoutX="625.0" layoutY="328.0" mnemonicParsing="false" text="Card" />
+      <Button fx:id="deckButton" layoutX="1096.0" layoutY="608.0" mnemonicParsing="false" onAction="#onDrawFromDeck" styleClass="card" stylesheets="@Css/Styles.css" text="Draw" />
+      <HBox fx:id="bot2Area" layoutX="51.0" layoutY="340.0" prefHeight="120.0" prefWidth="270.0" />
+      <HBox fx:id="bot3Area" layoutX="981.0" layoutY="340.0" prefHeight="120.0" prefWidth="270.0" />
+      <Label fx:id="statsLabel" layoutX="855.0" layoutY="151.0" text="Stats" textFill="WHITE">
+         <font>
+            <Font name="Acme Regular" size="18.0" />
+         </font></Label>
+      <Label fx:id="tableSumLabel" layoutX="910.0" layoutY="183.0" text="tableSum" textFill="WHITE">
+         <font>
+            <Font name="Acme Regular" size="18.0" />
+         </font></Label>
+      <Label fx:id="topCardLabel" layoutX="910.0" layoutY="223.0" text="topCard" textFill="WHITE">
+         <font>
+            <Font name="Acme Regular" size="18.0" />
+         </font></Label>
+   </children>
+</AnchorPane>
