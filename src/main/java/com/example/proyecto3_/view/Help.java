@@ -9,14 +9,14 @@ import javafx.stage.StageStyle;
 
 import java.io.IOException;
 
-public class Options extends Stage {
+public class Help extends Stage {
 
-    private Options() throws IOException {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/proyecto3_/Options-view.fxml"));
+    private Help() throws IOException {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/example/proyecto3_/Rules-view.fxml"));
         Parent root = loader.load();
         Scene scene = new Scene(root);
         setScene(scene);
-        setTitle("Opciones");
+        setTitle("Help");
         setResizable(false);
         initStyle(StageStyle.UNDECORATED);
         getIcons().add(new Image(Win.class.getResourceAsStream("/com/example/proyecto3_/Img/Icon.png")));
@@ -24,17 +24,18 @@ public class Options extends Stage {
     }
 
     private static class Holder {
-        private static Options INSTANCE = null;
+        private static Help INSTANCE = null;
     }
 
-    public static Options getInstance() throws IOException {
+    public static void getInstance() throws IOException {
         Holder.INSTANCE = Holder.INSTANCE != null ?
-                Holder.INSTANCE : new Options();
-        return Holder.INSTANCE;
+                Holder.INSTANCE : new Help();
     }
 
     public static void deleteInstance() {
         Holder.INSTANCE.close();
         Holder.INSTANCE = null;
     }
+
 }
+

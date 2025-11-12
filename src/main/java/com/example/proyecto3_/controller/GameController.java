@@ -5,6 +5,8 @@ import com.example.proyecto3_.model.Player.Player;
 import com.example.proyecto3_.model.Exceptions.*;
 import com.example.proyecto3_.model.Game.GameModel;
 import com.example.proyecto3_.model.Game.GameConfig;
+import com.example.proyecto3_.view.Game;
+import com.example.proyecto3_.view.Win;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -14,6 +16,7 @@ import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -74,7 +77,7 @@ public class GameController {
 
                 Platform.runLater(() -> {
                     try {
-                        // Verificar si puede jugar alguna carta
+
                         if (!machine.canPlay(game.getTableSum())) {
                             isMachineTurnRunning = false;
                             handlePlayerElimination();
@@ -92,7 +95,7 @@ public class GameController {
                         game.playCard(selectedCard);
                         updateUI();
 
-                        // Esperar antes de robar carta
+
                         new Thread(() -> {
                             try {
                                 Thread.sleep(1000 + (int)(Math.random() * 1000));
@@ -207,21 +210,21 @@ public class GameController {
      */
     private void updateUI() {
         if (tableSumLabel != null) {
-            tableSumLabel.setText("Sum: " + game.getTableSum());
+            tableSumLabel.setText("Total de puntos: " + game.getTableSum());
         }
 
         if (topCardLabel != null && game.getTopCard() != null) {
-            topCardLabel.setText("Card: " + game.getTopCard().toString());
+            topCardLabel.setText("Ultima carta jugada: " + game.getTopCard().toString());
         }
 
         if (currentTurnLabel != null) {
-            String turnText = "Turn: " + game.getCurrentPlayer().getName();
+            String turnText = "Turno actual: " + game.getCurrentPlayer().getName();
 
             if (!game.getCurrentPlayer().isMachine()) {
                 if (!humanHasPlayedCard) {
-                    turnText += " - Play a card";
+                    turnText += " - Juega una carta";
                 } else if (!humanHasDrawnCard) {
-                    turnText += " - Draw from deck";
+                    turnText += " - Roba una carta del mazo";
                 }
             }
 
@@ -231,9 +234,9 @@ public class GameController {
         if (statsLabel != null) {
             GameModel.GameStats stats = game.getStats();
             statsLabel.setText(
-                    "Turns: " + stats.getTotalTurns() +
-                            " | Cards: " + stats.getCardsPlayed() +
-                            " | Eliminated: " + stats.getPlayersEliminated()
+                    "Turnos: " + stats.getTotalTurns() +
+                            " | Cartas: " + stats.getCardsPlayed() +
+                            " | Eliminados: " + stats.getPlayersEliminated()
             );
         }
 
@@ -337,6 +340,8 @@ public class GameController {
 
         } catch (InvalidGameStateException e) {
             System.err.println("Error de estado del juego: " + e.getMessage());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -371,22 +376,19 @@ public class GameController {
     /**
      * Shows the winner
      */
-    private void showWinner() {
+    private void showWinner() throws IOException {
         Player winner = game.getWinner();
+
         if (winner != null) {
-            GameModel.GameStats stats = game.getStats();
+            Win winScene = Win.getInstance();
 
-            game.printPlayerStats();
+            if (winScene != null && winScene.getController() != null) {
+                winScene.getController().setWinnerName(winner.getName());
+            } else {
+                System.err.println("Error: Win o su controlador es null");
+            }
 
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Game Over!");
-            alert.setHeaderText(winner.getName() + " WINS!");
-            alert.setContentText(
-                    "Total Turns: " + stats.getTotalTurns() + "\n" +
-                            "Cards Played: " + stats.getCardsPlayed() + "\n" +
-                            "Players Eliminated: " + stats.getPlayersEliminated()
-            );
-            alert.showAndWait();
+            Game.deleteInstance();
         }
     }
 

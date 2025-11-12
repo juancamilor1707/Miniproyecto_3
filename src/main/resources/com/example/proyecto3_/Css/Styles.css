@@ -1,0 +1,84 @@
+.mainMenu {
+    -fx-background-image:url("../Img/MainMenu.png");
+    -fx-background-size:cover;
+}
+.redButton {
+    -fx-background-image:url(../Img/RedButton.png);
+    -fx-background-color: transparent;
+    -fx-background-size: cover;
+}
+.blueButton {
+    -fx-background-image:url(../Img/BlueButton.png);
+    -fx-background-color: transparent;
+    -fx-background-size: cover;
+}
+.blackButton {
+    -fx-background-image:url(../Img/BlackButton.png);
+    -fx-background-color: transparent;
+    -fx-background-size: cover;
+}
+.rectangularButton {
+    -fx-background-image:url(../Img/Button.png);
+    -fx-background-color: transparent;
+    -fx-background-size: cover;
+}
+.optionsMenu {
+    -fx-background-image:url("../Img/CasinoImage.jpeg");
+    -fx-background-size:cover;
+}
+.rulesMenu {
+    -fx-background-image:url("../Img/RulesMenu.JPG");
+    -fx-background-size:cover;
+}
+.boardView {
+    -fx-background-image:url("../Img/Board50zo.png");
+    -fx-background-size:cover;
+}
+.blackButton:hover {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, black, 10, 0.8, 0, 0);
+    -fx-scale-x: 1.1;
+    -fx-scale-y: 1.1;
+}
+.blueButton:hover {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, blue, 10, 0.8, 0, 0);
+    -fx-scale-x: 1.1;
+    -fx-scale-y: 1.1;
+}
+.redButton:hover {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, red, 10, 0.8, 0, 0);
+    -fx-scale-x: 1.1;
+    -fx-scale-y: 1.1;
+}
+.rectangularButton:hover {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, gold, 10, 0.8, 0, 0);
+    -fx-scale-x: 1.1;
+    -fx-scale-y: 1.1;
+    -fx-opacity: 1.0;
+}
+.winView {
+    -fx-background-image:url("../Img/WinView.JPG");
+    -fx-background-size:cover;
+}
+.card {
+    -fx-background-color: transparent;
+}
+.card:hover {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, aqua, 10, 0.8, 0, 0);
+    -fx-scale-x: 1.1;
+    -fx-scale-y: 1.1;
+    -fx-opacity: 1.0;
+}
+.loseView {
+    -fx-background-image:url("../Img/LoseView.JPG");
+    -fx-background-size:cover;
+}

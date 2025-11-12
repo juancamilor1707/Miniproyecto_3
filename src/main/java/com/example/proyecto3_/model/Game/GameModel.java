@@ -99,7 +99,7 @@ public class GameModel {
         this.playerStatsMap = new HashMap<>();
 
         // Create human player
-        Player human = new Player("You", false);
+        Player human = new Player("Tú", false);
         players.add(human);
         turnQueue.offer(human);
         playerStatsMap.put(human.getName(), new PlayerGameStats());
