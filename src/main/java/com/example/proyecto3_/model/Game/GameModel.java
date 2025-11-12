@@ -4,11 +4,10 @@ import com.example.proyecto3_.model.Cards.Card;
 import com.example.proyecto3_.model.Deck.Deck;
 import com.example.proyecto3_.model.Player.Player;
 import com.example.proyecto3_.model.Exceptions.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
- * Represents the game logic with exception handling
+ * Represents the game logic with Queue and Map structures
  */
 public class GameModel {
     private Deck deck;
@@ -16,6 +15,12 @@ public class GameModel {
     private List<Card> tableCards;
     private int tableSum;
     private int currentPlayerIndex;
+
+    // ESTRUCTURA 2: QUEUE para turnos
+    private Queue<Player> turnQueue;
+
+    // ESTRUCTURA 3: MAP para estadísticas por jugador
+    private Map<String, PlayerGameStats> playerStatsMap;
 
     /**
      * Inner class to represent game statistics
@@ -40,6 +45,35 @@ public class GameModel {
         public int getPlayersEliminated() { return playersEliminated; }
     }
 
+    /**
+     * Inner class for individual player statistics
+     */
+    public static class PlayerGameStats {
+        private int cardsPlayed;
+        private int turnsPlayed;
+        private boolean isWinner;
+
+        public PlayerGameStats() {
+            this.cardsPlayed = 0;
+            this.turnsPlayed = 0;
+            this.isWinner = false;
+        }
+
+        public void incrementCardsPlayed() { cardsPlayed++; }
+        public void incrementTurns() { turnsPlayed++; }
+        public void setWinner(boolean winner) { isWinner = winner; }
+
+        public int getCardsPlayed() { return cardsPlayed; }
+        public int getTurnsPlayed() { return turnsPlayed; }
+        public boolean isWinner() { return isWinner; }
+
+        @Override
+        public String toString() {
+            return "Cards: " + cardsPlayed + ", Turns: " + turnsPlayed +
+                    (isWinner ? " (WINNER)" : "");
+        }
+    }
+
     private GameStats stats;
 
     /**
@@ -58,12 +92,24 @@ public class GameModel {
         this.currentPlayerIndex = 0;
         this.stats = new GameStats();
 
+        // INICIALIZAR QUEUE
+        this.turnQueue = new LinkedList<>();
+
+        // INICIALIZAR MAP
+        this.playerStatsMap = new HashMap<>();
+
         // Create human player
-        players.add(new Player("You", false));
+        Player human = new Player("You", false);
+        players.add(human);
+        turnQueue.offer(human);
+        playerStatsMap.put(human.getName(), new PlayerGameStats());
 
         // Create machine players
         for (int i = 1; i <= numBots; i++) {
-            players.add(new Player("Bot " + i, true));
+            Player bot = new Player("Bot " + i, true);
+            players.add(bot);
+            turnQueue.offer(bot);
+            playerStatsMap.put(bot.getName(), new PlayerGameStats());
         }
     }
 
@@ -176,6 +222,12 @@ public class GameModel {
         tableCards.add(card);
         tableSum = newSum;
         stats.incrementCardsPlayed();
+
+        // ACTUALIZAR MAP de estadísticas
+        PlayerGameStats playerStats = playerStatsMap.get(currentPlayer.getName());
+        if (playerStats != null) {
+            playerStats.incrementCardsPlayed();
+        }
     }
 
     /**
@@ -205,7 +257,6 @@ public class GameModel {
         return card;
     }
 
-
     /**
      * Recycles cards from table to deck (except the last one)
      */
@@ -221,7 +272,7 @@ public class GameModel {
         List<Card> cardsToRecycle = new ArrayList<>();
         for (int i = 0; i < tableCards.size() - 1; i++) {
             Card card = tableCards.get(i);
-            card.setFaceUp(false);
+            card.setFaceUp(false); // Voltear cartas boca abajo
             cardsToRecycle.add(card);
         }
 
@@ -230,21 +281,38 @@ public class GameModel {
         tableCards.clear();
         tableCards.add(lastCard);
 
+        // Add cards to deck and shuffle
         deck.addCards(cardsToRecycle);
         deck.shuffle();
 
         System.out.println("✅ Reciclaje completado. " + cardsToRecycle.size() + " cartas agregadas al deck.");
         System.out.println("📊 Estado: Mesa=" + tableCards.size() + " carta(s), Deck=" + deck.size() + " cartas");
     }
+
     /**
-     * Moves to the next player's turn
+     * Moves to the next player's turn using Queue
      */
     public void nextTurn() {
         stats.incrementTurns();
 
+        Player current = getCurrentPlayer();
+        PlayerGameStats playerStats = playerStatsMap.get(current.getName());
+        if (playerStats != null) {
+            playerStats.incrementTurns();
+        }
+
         do {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         } while (getCurrentPlayer().isEliminated() && !isGameOver());
+
+        turnQueue.clear();
+        for (int i = 0; i < players.size(); i++) {
+            int index = (currentPlayerIndex + i) % players.size();
+            Player p = players.get(index);
+            if (!p.isEliminated()) {
+                turnQueue.offer(p);
+            }
+        }
     }
 
     /**
@@ -295,6 +363,11 @@ public class GameModel {
 
         for (Player player : players) {
             if (!player.isEliminated()) {
+                // Marcar como ganador en el MAP
+                PlayerGameStats stats = playerStatsMap.get(player.getName());
+                if (stats != null) {
+                    stats.setWinner(true);
+                }
                 return player;
             }
         }
@@ -309,4 +382,31 @@ public class GameModel {
         return deck.isEmpty();
     }
 
+    /**
+     * Gets statistics for a specific player
+     * @param playerName the player's name
+     * @return the player's statistics
+     */
+    public PlayerGameStats getPlayerStats(String playerName) {
+        return playerStatsMap.get(playerName);
+    }
+
+    /**
+     * Gets all player statistics
+     * @return map of all player statistics
+     */
+    public Map<String, PlayerGameStats> getAllPlayerStats() {
+        return new HashMap<>(playerStatsMap);
+    }
+
+    /**
+     * Prints all player statistics to console
+     */
+    public void printPlayerStats() {
+        System.out.println("\n=== ESTADÍSTICAS POR JUGADOR ===");
+        for (Map.Entry<String, PlayerGameStats> entry : playerStatsMap.entrySet()) {
+            System.out.println(entry.getKey() + ": " + entry.getValue());
+        }
+        System.out.println("================================\n");
+    }
 }

@@ -74,6 +74,7 @@ public class GameController {
 
                 Platform.runLater(() -> {
                     try {
+                        // Verificar si puede jugar alguna carta
                         if (!machine.canPlay(game.getTableSum())) {
                             isMachineTurnRunning = false;
                             handlePlayerElimination();
@@ -91,6 +92,7 @@ public class GameController {
                         game.playCard(selectedCard);
                         updateUI();
 
+                        // Esperar antes de robar carta
                         new Thread(() -> {
                             try {
                                 Thread.sleep(1000 + (int)(Math.random() * 1000));
@@ -150,7 +152,6 @@ public class GameController {
             System.err.println("Error inicializando juego: " + e.getMessage());
         }
     }
-
 
     @FXML
     private void onDrawFromDeck() {
@@ -374,6 +375,9 @@ public class GameController {
         Player winner = game.getWinner();
         if (winner != null) {
             GameModel.GameStats stats = game.getStats();
+
+            game.printPlayerStats();
+
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Game Over!");
             alert.setHeaderText(winner.getName() + " WINS!");
