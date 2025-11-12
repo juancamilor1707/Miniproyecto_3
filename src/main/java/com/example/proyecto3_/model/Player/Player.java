@@ -5,90 +5,88 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents a player in the game
+ * Represents a player in the game.
  */
-public class Player {
-    private String name;
-    private List<Card> hand;
-    private boolean isEliminated;
-    private boolean isMachine;
+public class Player extends AbstractPlayer {
 
     /**
-     * Creates a new player
+     * Creates a new player.
      * @param name the player's name
      * @param isMachine true if machine player, false if human
      */
     public Player(String name, boolean isMachine) {
-        this.name = name;
-        this.isMachine = isMachine;
-        this.hand = new ArrayList<>();
-        this.isEliminated = false;
+        super(name, isMachine);
     }
 
     /**
-     * Gets the player's name
+     * Gets the player's name.
      * @return player name
      */
+    @Override
     public String getName() {
-        return name;
+        return super.getName();
     }
 
     /**
-     * Checks if player is a machine
+     * Checks if player is a machine.
      * @return true if machine, false if human
      */
+    @Override
     public boolean isMachine() {
-        return isMachine;
+        return super.isMachine();
     }
 
     /**
-     * Gets the player's hand
+     * Gets the player's hand.
      * @return list of cards in hand
      */
+    @Override
     public List<Card> getHand() {
-        return hand;
+        return super.getHand();
     }
 
     /**
-     * Adds a card to the player's hand
+     * Adds a card to the player's hand.
      * @param card the card to add
      */
+    @Override
     public void addCard(Card card) {
-        hand.add(card);
-        if (!isMachine) {
-            card.setFaceUp(true); // Human cards are face up
-        }
+        super.addCard(card);
     }
 
     /**
-     * Removes a card from the player's hand
+     * Removes a card from the player's hand.
      * @param card the card to remove
      * @return true if removed, false otherwise
      */
+    @Override
     public boolean removeCard(Card card) {
-        return hand.remove(card);
+        return super.removeCard(card);
     }
 
     /**
-     * Checks if player is eliminated
+     * Checks if player is eliminated.
      * @return true if eliminated, false otherwise
      */
+    @Override
     public boolean isEliminated() {
-        return isEliminated;
+        return super.isEliminated();
     }
 
     /**
-     * Sets the player as eliminated
+     * Sets the player as eliminated.
      */
+    @Override
     public void eliminate() {
-        this.isEliminated = true;
+        super.eliminate();
     }
 
     /**
-     * Checks if player can play any card
+     * Checks if player can play any card.
      * @param currentSum the current sum on the table
      * @return true if can play, false otherwise
      */
+    @Override
     public boolean canPlay(int currentSum) {
         for (Card card : hand) {
             int newSum = currentSum + card.getValue(currentSum);
@@ -100,16 +98,16 @@ public class Player {
     }
 
     /**
-     * Selects a valid card to play (for machine)
+     * Selects a valid card to play (for machine).
      * @param currentSum the current sum on the table
      * @return a valid card, or null if none available
      */
+    @Override
     public Card selectCard(int currentSum) {
         if (!isMachine) {
             return null; // Human selects manually
         }
 
-        // Machine logic: select first valid card
         for (Card card : hand) {
             int newSum = currentSum + card.getValue(currentSum);
             if (newSum <= 50) {
@@ -120,12 +118,11 @@ public class Player {
     }
 
     /**
-     * Gets all cards from hand and clears it
+     * Gets all cards from hand and clears it.
      * @return list of all cards that were in hand
      */
+    @Override
     public List<Card> clearHand() {
-        List<Card> cards = new ArrayList<>(hand);
-        hand.clear();
-        return cards;
+        return super.clearHand();
     }
 }

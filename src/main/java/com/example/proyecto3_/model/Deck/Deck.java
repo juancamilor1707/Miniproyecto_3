@@ -4,24 +4,24 @@ import com.example.proyecto3_.model.Cards.Card;
 import java.util.*;
 
 /**
- * Represents a deck of cards using Stack (LIFO)
+ * Represents a deck of cards using Stack (LIFO).
  */
-public class Deck {
-    private Stack<Card> cards;
+public class Deck extends AbstractDeck {
 
     /**
-     * Creates a new deck with 52 cards
+     * Creates a new deck with 52 cards.
      */
     public Deck() {
-        cards = new Stack<>();
+        super();
         initializeDeck();
         shuffle();
     }
 
     /**
-     * Initializes the deck with all 52 cards
+     * Initializes the deck with all 52 cards.
      */
-    private void initializeDeck() {
+    @Override
+    protected void initializeDeck() {
         String[] ranks = {"2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"};
         String[] suits = {"Hearts", "Diamonds", "Clubs", "Spades"};
 
@@ -32,70 +32,68 @@ public class Deck {
             }
         }
 
-        // Agregar todas al stack
         cards.addAll(tempCards);
     }
 
     /**
-     * Shuffles the deck
+     * Shuffles the deck.
      */
+    @Override
     public void shuffle() {
-        List<Card> tempList = new ArrayList<>(cards);
-        Collections.shuffle(tempList);
-        cards.clear();
-        cards.addAll(tempList);
+        super.shuffle();
     }
 
     /**
-     * Draws a card from the top of the deck (Stack pop)
+     * Draws a card from the top of the deck (Stack pop).
      * @return the drawn card, or null if deck is empty
      */
+    @Override
     public Card drawCard() {
-        if (cards.isEmpty()) {
-            return null;
-        }
-        return cards.pop();  // LIFO - Saca del tope
+        return super.drawCard();
     }
 
     /**
-     * Adds a card to the deck
+     * Adds a card to the deck.
      * @param card the card to add
      */
+    @Override
     public void addCard(Card card) {
-        cards.push(card);  // Push al stack
+        super.addCard(card);
     }
 
     /**
-     * Adds multiple cards to the deck
+     * Adds multiple cards to the deck.
      * @param cardsToAdd list of cards to add
      */
+    @Override
     public void addCards(List<Card> cardsToAdd) {
-        for (Card card : cardsToAdd) {
-            cards.push(card);
-        }
+        super.addCards(cardsToAdd);
     }
 
     /**
-     * Checks if the deck is empty
+     * Checks if the deck is empty.
      * @return true if empty, false otherwise
      */
+    @Override
     public boolean isEmpty() {
-        return cards.isEmpty();
+        return super.isEmpty();
     }
 
     /**
-     * Gets the number of cards remaining
+     * Gets the number of cards remaining.
      * @return number of cards in deck
      */
+    @Override
     public int size() {
-        return cards.size();
+        return super.size();
     }
 
     /**
-     * Gets the cards in the deck
+     * Gets the cards in the deck.
      * @return list of cards
      */
+    @Override
     public List<Card> getCards() {
-        return new ArrayList<>(cards);
+        return super.getCards();
     }
 }
