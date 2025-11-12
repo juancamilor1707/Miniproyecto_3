@@ -3,7 +3,9 @@ package com.example.proyecto3_.view;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 import java.io.IOException;
 
@@ -25,6 +27,8 @@ public class Game extends Stage {
         setScene(scene);
         setTitle("Juego");
         setResizable(false);
+        initStyle(StageStyle.UNDECORATED);
+        getIcons().add(new Image(Win.class.getResourceAsStream("/com/example/proyecto3_/Img/Icon.png")));
         show();
     }
 

@@ -4,7 +4,10 @@ import com.example.proyecto3_.controller.WinController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+
 import java.io.IOException;
 
 public class Win extends Stage {
@@ -22,6 +25,8 @@ public class Win extends Stage {
         setScene(scene);
         setTitle("Win");
         setResizable(false);
+        initStyle(StageStyle.UNDECORATED);
+        getIcons().add(new Image(Win.class.getResourceAsStream("/com/example/proyecto3_/Img/Icon.png")));
         show();
     }
 

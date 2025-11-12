@@ -1,6 +1,7 @@
 module com.example.proyecto3_ {
     requires javafx.controls;
     requires javafx.fxml;
+    requires javafx.graphics;
 
 
     opens com.example.proyecto3_.controller to javafx.fxml;
