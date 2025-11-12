@@ -33,6 +33,9 @@ public class GameController {
     @FXML private HBox bot1Area;
     @FXML private HBox bot2Area;
     @FXML private HBox bot3Area;
+    @FXML private ImageView bot1Imageview;
+    @FXML private ImageView bot2Imageview;
+    @FXML private ImageView bot3Imageview;
 
     private boolean isMachineTurnRunning = false;
 
@@ -225,18 +228,39 @@ public class GameController {
      */
     private void configureUIForBots(int numBots) {
         if (bot1Area != null) {
-            bot1Area.setVisible(numBots >= 1);
-            bot1Area.setManaged(numBots >= 1);
+            boolean activo = numBots >= 1;
+            bot1Area.setVisible(activo);
+            bot1Area.setManaged(activo);
+            if (activo) {
+                Image bot1Image = new Image(getClass().getResource("/com/example/proyecto3_/Img/Bot1.png").toExternalForm());
+                bot1Imageview.setImage(bot1Image);
+            } else {
+                bot1Imageview.setImage(null);
+            }
         }
 
         if (bot2Area != null) {
-            bot2Area.setVisible(numBots >= 2);
-            bot2Area.setManaged(numBots >= 2);
+            boolean activo = numBots >= 2;
+            bot2Area.setVisible(activo);
+            bot2Area.setManaged(activo);
+            if (activo) {
+                Image bot2Image = new Image(getClass().getResource("/com/example/proyecto3_/Img/Bot2.png").toExternalForm());
+                bot2Imageview.setImage(bot2Image);
+            } else {
+                bot2Imageview.setImage(null);
+            }
         }
 
         if (bot3Area != null) {
-            bot3Area.setVisible(numBots >= 3);
-            bot3Area.setManaged(numBots >= 3);
+            boolean activo = numBots >= 3;
+            bot3Area.setVisible(activo);
+            bot3Area.setManaged(activo);
+            if (activo) {
+                Image bot3Image = new Image(getClass().getResource("/com/example/proyecto3_/Img/Bot3.png").toExternalForm());
+                bot3Imageview.setImage(bot3Image);
+            } else {
+                bot3Imageview.setImage(null);
+            }
         }
     }
 
@@ -265,13 +289,13 @@ public class GameController {
         }
 
         if (currentTurnLabel != null) {
-            String turnText = "Turno actual: " + game.getCurrentPlayer().getName();
+            String turnText = game.getCurrentPlayer().getName();
 
             if (!game.getCurrentPlayer().isMachine()) {
                 if (!GameConfig.getInstance().hasHumanPlayedCard()) {
                     turnText += " - Juega una carta";
                 } else if (!GameConfig.getInstance().hasHumanDrawnCard()) {
-                    turnText += " - Roba una carta del mazo";
+                    turnText += " - Roba una carta";
                 }
             }
 
