@@ -1,23 +1,32 @@
+* {
+    -fx-font-family: "Acme", sans-serif;
+}
+
+
 .mainMenu {
     -fx-background-image:url("../Img/MainMenu.png");
     -fx-background-size:cover;
 }
 .redButton {
+    -fx-font-size: 16px;
     -fx-background-image:url(../Img/RedButton.png);
     -fx-background-color: transparent;
     -fx-background-size: cover;
 }
 .blueButton {
+    -fx-font-size: 16px;
     -fx-background-image:url(../Img/BlueButton.png);
     -fx-background-color: transparent;
     -fx-background-size: cover;
 }
 .blackButton {
+    -fx-font-size: 16px;
     -fx-background-image:url(../Img/BlackButton.png);
     -fx-background-color: transparent;
     -fx-background-size: cover;
 }
 .rectangularButton {
+    -fx-font-size: 16px;
     -fx-background-image:url(../Img/Button.png);
     -fx-background-color: transparent;
     -fx-background-size: cover;
@@ -44,14 +53,14 @@
 .blueButton:hover {
     -fx-font-size: 20px;
     -fx-font-weight: bold;
-    -fx-effect: dropshadow(gaussian, blue, 10, 0.8, 0, 0);
+    -fx-effect: dropshadow(gaussian, #1055C9, 10, 0.8, 0, 0);
     -fx-scale-x: 1.1;
     -fx-scale-y: 1.1;
 }
 .redButton:hover {
     -fx-font-size: 20px;
     -fx-font-weight: bold;
-    -fx-effect: dropshadow(gaussian, red, 10, 0.8, 0, 0);
+    -fx-effect: dropshadow(gaussian, #E43636, 10, 0.8, 0, 0);
     -fx-scale-x: 1.1;
     -fx-scale-y: 1.1;
 }
@@ -73,7 +82,7 @@
 .card:hover {
     -fx-font-size: 20px;
     -fx-font-weight: bold;
-    -fx-effect: dropshadow(gaussian, aqua, 10, 0.8, 0, 0);
+    -fx-effect: dropshadow(gaussian, aqua, 5, 0.4, 0, 0);
     -fx-scale-x: 1.1;
     -fx-scale-y: 1.1;
     -fx-opacity: 1.0;
@@ -82,3 +91,4 @@
     -fx-background-image:url("../Img/LoseView.JPG");
     -fx-background-size:cover;
 }
+

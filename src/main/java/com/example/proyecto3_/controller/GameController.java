@@ -16,10 +16,12 @@ import javafx.scene.image.ImageView;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.*;
 
 /**
  * Controller ONLY for UI/FXML interaction
  * All game logic is delegated to GameConfig
+ * Refactored with proper thread management
  */
 public class GameController {
 
@@ -37,7 +39,19 @@ public class GameController {
     @FXML private ImageView bot2Imageview;
     @FXML private ImageView bot3Imageview;
 
-    private boolean isMachineTurnRunning = false;
+    private final ExecutorService machineTurnExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "MachineTurnThread");
+        t.setDaemon(true);
+        return t;
+    });
+
+    private final ScheduledExecutorService uiUpdateScheduler = Executors.newScheduledThreadPool(1, r -> {
+        Thread t = new Thread(r, "UIUpdateThread");
+        t.setDaemon(true);
+        return t;
+    });
+
+    private volatile boolean isMachineTurnRunning = false;
 
     /**
      * Initializes the game controller
@@ -81,6 +95,7 @@ public class GameController {
         try {
             if (GameConfig.getInstance().isGameOver()) {
                 showWinner();
+                shutdown();
                 return;
             }
 
@@ -103,92 +118,74 @@ public class GameController {
     }
 
     /**
-     * Executes a machine player's turn in a separate thread
+     * Executes a machine player's turn using a single thread with proper delays
      */
     private void executeMachineTurn() {
         if (isMachineTurnRunning) return;
 
         isMachineTurnRunning = true;
 
-        new Thread(() -> {
+        machineTurnExecutor.submit(() -> {
             try {
-                // Wait before playing (simulate thinking)
-                Thread.sleep(2000 + (int)(Math.random() * 2000));
+                Thread.sleep(2000 + (long)(Math.random() * 2000));
 
+                Player machine = GameConfig.getInstance().getGame().getCurrentPlayer();
+
+                if (!machine.canPlay(GameConfig.getInstance().getGame().getTableSum())) {
+                    Platform.runLater(() -> {
+                        isMachineTurnRunning = false;
+                        handlePlayerElimination();
+                    });
+                    return;
+                }
+
+                Card selectedCard = machine.selectCard(GameConfig.getInstance().getGame().getTableSum());
+                if (selectedCard == null) {
+                    Platform.runLater(() -> {
+                        isMachineTurnRunning = false;
+                        handlePlayerElimination();
+                    });
+                    return;
+                }
+
+                // STEP 1: Play the card
+                try {
+                    GameConfig.getInstance().getGame().playCard(selectedCard);
+                    Platform.runLater(this::updateUI);
+                } catch (Exception e) {
+                    System.err.println("Bot movimiento inválido: " + e.getMessage());
+                    Platform.runLater(() -> {
+                        isMachineTurnRunning = false;
+                        handlePlayerElimination();
+                    });
+                    return;
+                }
+
+                Thread.sleep(2000 + (long)(Math.random() * 1000));
+
+                // STEP 2: Draw a card
+                try {
+                    GameConfig.getInstance().getGame().drawCard();
+                    Platform.runLater(this::updateUI);
+                } catch (Exception e) {
+                    System.err.println("Bot no pudo robar: " + e.getMessage());
+                }
+
+                Thread.sleep(1000);
+
+                // STEP 3: Complete turn
                 Platform.runLater(() -> {
-                    // Play the card first
-                    Player machine = GameConfig.getInstance().getGame().getCurrentPlayer();
-
-                    if (!machine.canPlay(GameConfig.getInstance().getGame().getTableSum())) {
-                        isMachineTurnRunning = false;
-                        handlePlayerElimination();
-                        return;
-                    }
-
-                    Card selectedCard = machine.selectCard(GameConfig.getInstance().getGame().getTableSum());
-                    if (selectedCard == null) {
-                        isMachineTurnRunning = false;
-                        handlePlayerElimination();
-                        return;
-                    }
-
-                    try {
-                        GameConfig.getInstance().getGame().playCard(selectedCard);
-                        updateUI();
-
-                        // NOW wait before drawing the card
-                        new Thread(() -> {
-                            try {
-                                Thread.sleep(2000 + (int)(Math.random() * 1000));
-
-                                Platform.runLater(() -> {
-                                    try {
-                                        GameConfig.getInstance().getGame().drawCard();
-                                        updateUI();
-
-                                        // Wait a bit more before completing turn
-                                        new Thread(() -> {
-                                            try {
-                                                Thread.sleep(1000);
-
-                                                Platform.runLater(() -> {
-                                                    GameConfig.getInstance().completeTurn();
-                                                    isMachineTurnRunning = false;
-                                                    processTurn();
-                                                });
-
-                                            } catch (InterruptedException e) {
-                                                e.printStackTrace();
-                                                isMachineTurnRunning = false;
-                                            }
-                                        }).start();
-
-                                    } catch (Exception e) {
-                                        System.err.println("Bot no pudo robar: " + e.getMessage());
-                                        GameConfig.getInstance().completeTurn();
-                                        isMachineTurnRunning = false;
-                                        processTurn();
-                                    }
-                                });
-
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                                isMachineTurnRunning = false;
-                            }
-                        }).start();
-
-                    } catch (Exception e) {
-                        System.err.println("Bot movimiento inválido: " + e.getMessage());
-                        isMachineTurnRunning = false;
-                        handlePlayerElimination();
-                    }
+                    GameConfig.getInstance().completeTurn();
+                    isMachineTurnRunning = false;
+                    processTurn();
                 });
 
             } catch (InterruptedException e) {
-                e.printStackTrace();
-                isMachineTurnRunning = false;
+                System.err.println("Machine turn interrupted: " + e.getMessage());
+                Thread.currentThread().interrupt();
+                Platform.runLater(() -> isMachineTurnRunning = false);
             }
-        }).start();
+        });
     }
 
     /**
@@ -218,6 +215,26 @@ public class GameController {
             }
 
             Game.deleteInstance();
+        }
+    }
+
+    /**
+     * Shuts down all thread pools gracefully
+     */
+    private void shutdown() {
+        machineTurnExecutor.shutdown();
+        uiUpdateScheduler.shutdown();
+        try {
+            if (!machineTurnExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                machineTurnExecutor.shutdownNow();
+            }
+            if (!uiUpdateScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                uiUpdateScheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            machineTurnExecutor.shutdownNow();
+            uiUpdateScheduler.shutdownNow();
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -264,16 +281,20 @@ public class GameController {
         }
     }
 
+
     /**
      * Updates the entire UI with current game state
+     * Schedules periodic UI refresh every 100ms for smooth updates
      */
     private void updateUI() {
-        GameModel game = GameConfig.getInstance().getGame();
+        Platform.runLater(() -> {
+            GameModel game = GameConfig.getInstance().getGame();
 
-        updateLabels(game);
-        updateTableArea(game);
-        updateHumanHand(game);
-        updateBotHands(game);
+            updateLabels(game);
+            updateTableArea(game);
+            updateHumanHand(game);
+            updateBotHands(game);
+        });
     }
 
     /**
@@ -285,11 +306,13 @@ public class GameController {
         }
 
         if (topCardLabel != null && game.getTopCard() != null) {
-            topCardLabel.setText("Ultima carta jugada: " + game.getTopCard().toString());
+            Card topCard = game.getTopCard();
+            String cardText = translateCardToSpanish(topCard);
+            topCardLabel.setText("Ultima carta jugada: " + cardText);
         }
 
         if (currentTurnLabel != null) {
-            String turnText = game.getCurrentPlayer().getName();
+            String turnText = " " + game.getCurrentPlayer().getName();
 
             if (!game.getCurrentPlayer().isMachine()) {
                 if (!GameConfig.getInstance().hasHumanPlayedCard()) {
@@ -309,6 +332,51 @@ public class GameController {
                             " | Cartas: " + stats.getCardsPlayed() +
                             " | Eliminados: " + stats.getPlayersEliminated()
             );
+        }
+    }
+
+    /**
+     * Translates a card to Spanish format
+     */
+    private String translateCardToSpanish(Card card) {
+        String rank = translateRank(card.getRank());
+        String suit = translateSuitToSpanish(card.getSuit());
+        return rank + " de " + suit;
+    }
+
+    /**
+     * Translates card rank to Spanish
+     */
+    private String translateRank(String rank) {
+        switch (rank) {
+            case "J":
+                return "Jota";
+            case "Q":
+                return "Reina";
+            case "K":
+                return "Rey";
+            case "A":
+                return "As";
+            default:
+                return rank;
+        }
+    }
+
+    /**
+     * Translates suit names to Spanish (full names)
+     */
+    private String translateSuitToSpanish(String suit) {
+        switch (suit.toLowerCase()) {
+            case "hearts":
+                return "Corazones";
+            case "diamonds":
+                return "Diamantes";
+            case "clubs":
+                return "Trébol";
+            case "spades":
+                return "Picas";
+            default:
+                return suit;
         }
     }
 

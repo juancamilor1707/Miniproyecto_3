@@ -16,10 +16,8 @@ public class GameModel {
     private int tableSum;
     private int currentPlayerIndex;
 
-    // ESTRUCTURA 2: QUEUE para turnos
     private Queue<Player> turnQueue;
 
-    // ESTRUCTURA 3: MAP para estadísticas por jugador
     private Map<String, PlayerGameStats> playerStatsMap;
 
     /**
@@ -92,10 +90,8 @@ public class GameModel {
         this.currentPlayerIndex = 0;
         this.stats = new GameStats();
 
-        // INICIALIZAR QUEUE
         this.turnQueue = new LinkedList<>();
 
-        // INICIALIZAR MAP
         this.playerStatsMap = new HashMap<>();
 
         // Create human player
@@ -223,7 +219,6 @@ public class GameModel {
         tableSum = newSum;
         stats.incrementCardsPlayed();
 
-        // ACTUALIZAR MAP de estadísticas
         PlayerGameStats playerStats = playerStatsMap.get(currentPlayer.getName());
         if (playerStats != null) {
             playerStats.incrementCardsPlayed();
@@ -272,7 +267,7 @@ public class GameModel {
         List<Card> cardsToRecycle = new ArrayList<>();
         for (int i = 0; i < tableCards.size() - 1; i++) {
             Card card = tableCards.get(i);
-            card.setFaceUp(false); // Voltear cartas boca abajo
+            card.setFaceUp(false);
             cardsToRecycle.add(card);
         }
 
@@ -363,7 +358,6 @@ public class GameModel {
 
         for (Player player : players) {
             if (!player.isEliminated()) {
-                // Marcar como ganador en el MAP
                 PlayerGameStats stats = playerStatsMap.get(player.getName());
                 if (stats != null) {
                     stats.setWinner(true);

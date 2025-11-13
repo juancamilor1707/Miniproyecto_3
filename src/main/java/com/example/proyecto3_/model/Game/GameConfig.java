@@ -4,8 +4,12 @@ import com.example.proyecto3_.model.Cards.Card;
 import com.example.proyecto3_.model.Player.Player;
 import com.example.proyecto3_.model.Exceptions.*;
 
+import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * Singleton class to store game configuration AND handle ALL game logic
+ * Enhanced with thread-safe operations
  */
 public class GameConfig {
 
@@ -15,8 +19,22 @@ public class GameConfig {
 
     private int numBots;
     private GameModel game;
-    private boolean humanHasPlayedCard = false;
-    private boolean humanHasDrawnCard = false;
+    private volatile boolean humanHasPlayedCard = false;
+    private volatile boolean humanHasDrawnCard = false;
+
+    private final ExecutorService gameLogicExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "GameLogicThread");
+        t.setDaemon(true);
+        return t;
+    });
+
+    private final ExecutorService validationExecutor = Executors.newCachedThreadPool(r -> {
+        Thread t = new Thread(r, "ValidationThread-" + System.nanoTime());
+        t.setDaemon(true);
+        return t;
+    });
+
+    private final ReentrantLock gameLock = new ReentrantLock();
 
     private GameConfig() {
         this.numBots = 1; // Default value
@@ -55,9 +73,14 @@ public class GameConfig {
      * Initializes a new game with the configured number of bots
      */
     public void initializeGame() {
-        game = new GameModel(numBots);
-        game.start();
-        resetTurnFlags();
+        gameLock.lock();
+        try {
+            game = new GameModel(numBots);
+            game.start();
+            resetTurnFlags();
+        } finally {
+            gameLock.unlock();
+        }
     }
 
     /**
@@ -69,11 +92,12 @@ public class GameConfig {
     }
 
     /**
-     * Attempts to play a card for the current player
+     * Attempts to play a card for the current player (Thread-safe)
      * @param card the card to play
      * @return true if card was played successfully
      */
     public boolean playCard(Card card) {
+        gameLock.lock();
         try {
             Player currentPlayer = game.getCurrentPlayer();
 
@@ -93,14 +117,17 @@ public class GameConfig {
         } catch (InvalidMoveException e) {
             System.err.println("Movimiento inválido: " + e.getMessage());
             return false;
+        } finally {
+            gameLock.unlock();
         }
     }
 
     /**
-     * Attempts to draw a card for the current player
+     * Attempts to draw a card for the current player (Thread-safe)
      * @return true if card was drawn successfully
      */
     public boolean drawCard() {
+        gameLock.lock();
         try {
             Player current = game.getCurrentPlayer();
 
@@ -122,6 +149,8 @@ public class GameConfig {
             // Still count as drawn to allow turn progression
             humanHasDrawnCard = true;
             return true;
+        } finally {
+            gameLock.unlock();
         }
     }
 
@@ -136,60 +165,138 @@ public class GameConfig {
     }
 
     /**
-     * Completes the current turn and moves to next player
+     * Completes the current turn and moves to next player (Thread-safe)
      */
     public void completeTurn() {
-        resetTurnFlags();
-        game.nextTurn();
+        gameLock.lock();
+        try {
+            resetTurnFlags();
+            game.nextTurn();
+        } finally {
+            gameLock.unlock();
+        }
     }
 
     /**
-     * Processes machine player's turn
+     * Processes machine player's turn asynchronously
+     * @return Future<MachineTurnResult> with the outcome
+     */
+    public Future<MachineTurnResult> processMachineTurnAsync() {
+        return gameLogicExecutor.submit(() -> {
+            gameLock.lock();
+            try {
+                Player machine = game.getCurrentPlayer();
+
+                if (!machine.isMachine()) {
+                    return new MachineTurnResult(false, "Not a machine player", null);
+                }
+
+                // Check if machine can play
+                if (!machine.canPlay(game.getTableSum())) {
+                    return new MachineTurnResult(false, "Cannot play any card", null);
+                }
+
+                // Select and play card
+                Card selectedCard = machine.selectCard(game.getTableSum());
+                if (selectedCard == null) {
+                    return new MachineTurnResult(false, "No valid card selected", null);
+                }
+
+                try {
+                    game.playCard(selectedCard);
+
+                    // Check if deck is empty and recycle automatically before drawing
+                    checkAndRecycleDeck();
+
+                    // Try to draw a card
+                    try {
+                        game.drawCard();
+                    } catch (DeckEmptyException e) {
+                        System.err.println("Bot no pudo robar: " + e.getMessage());
+                    }
+
+                    return new MachineTurnResult(true, "Turn completed", selectedCard);
+
+                } catch (InvalidMoveException e) {
+                    return new MachineTurnResult(false, "Invalid move: " + e.getMessage(), null);
+                }
+            } finally {
+                gameLock.unlock();
+            }
+        });
+    }
+
+    /**
+     * Processes machine player's turn (synchronous version)
      * @return MachineTurnResult with the outcome
      */
     public MachineTurnResult processMachineTurn() {
-        Player machine = game.getCurrentPlayer();
-
-        if (!machine.isMachine()) {
-            return new MachineTurnResult(false, "Not a machine player", null);
-        }
-
-        // Check if machine can play
-        if (!machine.canPlay(game.getTableSum())) {
-            return new MachineTurnResult(false, "Cannot play any card", null);
-        }
-
-        // Select and play card
-        Card selectedCard = machine.selectCard(game.getTableSum());
-        if (selectedCard == null) {
-            return new MachineTurnResult(false, "No valid card selected", null);
-        }
-
+        gameLock.lock();
         try {
-            game.playCard(selectedCard);
+            Player machine = game.getCurrentPlayer();
 
-            // Check if deck is empty and recycle automatically before drawing
-            checkAndRecycleDeck();
-
-            // Try to draw a card
-            try {
-                game.drawCard();
-            } catch (DeckEmptyException e) {
-                System.err.println("Bot no pudo robar: " + e.getMessage());
+            if (!machine.isMachine()) {
+                return new MachineTurnResult(false, "Not a machine player", null);
             }
 
-            return new MachineTurnResult(true, "Turn completed", selectedCard);
+            // Check if machine can play
+            if (!machine.canPlay(game.getTableSum())) {
+                return new MachineTurnResult(false, "Cannot play any card", null);
+            }
 
-        } catch (InvalidMoveException e) {
-            return new MachineTurnResult(false, "Invalid move: " + e.getMessage(), null);
+            // Select and play card
+            Card selectedCard = machine.selectCard(game.getTableSum());
+            if (selectedCard == null) {
+                return new MachineTurnResult(false, "No valid card selected", null);
+            }
+
+            try {
+                game.playCard(selectedCard);
+
+                // Check if deck is empty and recycle automatically before drawing
+                checkAndRecycleDeck();
+
+                // Try to draw a card
+                try {
+                    game.drawCard();
+                } catch (DeckEmptyException e) {
+                    System.err.println("Bot no pudo robar: " + e.getMessage());
+                }
+
+                return new MachineTurnResult(true, "Turn completed", selectedCard);
+
+            } catch (InvalidMoveException e) {
+                return new MachineTurnResult(false, "Invalid move: " + e.getMessage(), null);
+            }
+        } finally {
+            gameLock.unlock();
         }
     }
 
     /**
-     * Eliminates the current player
+     * Validates if a move is valid asynchronously (useful for AI planning)
+     * @param card the card to validate
+     * @return Future<Boolean> indicating if move is valid
+     */
+    public Future<Boolean> validateMoveAsync(Card card) {
+        return validationExecutor.submit(() -> {
+            gameLock.lock();
+            try {
+                int tableSum = game.getTableSum();
+                int cardValue = card.getValue(tableSum);
+                return (tableSum + cardValue) <= 50 && (tableSum + cardValue) >= 0;
+            } finally {
+                gameLock.unlock();
+            }
+        });
+    }
+
+    /**
+     * Eliminates the current player (Thread-safe)
      * @return name of eliminated player
      */
     public String eliminateCurrentPlayer() {
+        gameLock.lock();
         try {
             String playerName = game.getCurrentPlayer().getName();
             game.eliminateCurrentPlayer();
@@ -201,34 +308,76 @@ public class GameConfig {
         } catch (NoValidCardException e) {
             resetTurnFlags();
             return e.getMessage();
+        } finally {
+            gameLock.unlock();
         }
     }
 
     /**
-     * Checks if current player can make any valid move
+     * Checks if current player can make any valid move (Thread-safe)
      */
     public boolean canCurrentPlayerPlay() {
-        return game.getCurrentPlayer().canPlay(game.getTableSum());
+        gameLock.lock();
+        try {
+            return game.getCurrentPlayer().canPlay(game.getTableSum());
+        } finally {
+            gameLock.unlock();
+        }
     }
 
     /**
-     * Checks if the game has ended
+     * Checks if the game has ended (Thread-safe)
      */
     public boolean isGameOver() {
-        return game.isGameOver();
+        gameLock.lock();
+        try {
+            return game.isGameOver();
+        } finally {
+            gameLock.unlock();
+        }
     }
 
     /**
-     * Gets the winner of the game
+     * Gets the winner of the game (Thread-safe)
      */
     public Player getWinner() {
-        return game.getWinner();
+        gameLock.lock();
+        try {
+            return game.getWinner();
+        } finally {
+            gameLock.unlock();
+        }
+    }
+
+    /**
+     * Shuts down all thread pools gracefully
+     */
+    public void shutdown() {
+        gameLogicExecutor.shutdown();
+        validationExecutor.shutdown();
+        try {
+            if (!gameLogicExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                gameLogicExecutor.shutdownNow();
+            }
+            if (!validationExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                validationExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            gameLogicExecutor.shutdownNow();
+            validationExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     // ==================== GETTERS ====================
 
     public GameModel getGame() {
-        return game;
+        gameLock.lock();
+        try {
+            return game;
+        } finally {
+            gameLock.unlock();
+        }
     }
 
     public boolean hasHumanPlayedCard() {
