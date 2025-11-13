@@ -8,8 +8,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Singleton class to store game configuration AND handle ALL game logic
- * Enhanced with thread-safe operations
+ * Singleton class to store game configuration and handle all game logic.
+ * Provides thread-safe operations for managing game state and player actions.
  */
 public class GameConfig {
 
@@ -36,12 +36,16 @@ public class GameConfig {
 
     private final ReentrantLock gameLock = new ReentrantLock();
 
+    /**
+     * Creates a new GameConfig instance with default values.
+     * Private constructor to enforce singleton pattern.
+     */
     private GameConfig() {
         this.numBots = 1; // Default value
     }
 
     /**
-     * Gets the singleton instance
+     * Gets the singleton instance of GameConfig.
      * @return the unique GameConfig instance
      */
     public static GameConfig getInstance() {
@@ -49,8 +53,9 @@ public class GameConfig {
     }
 
     /**
-     * Sets the number of bots for the game
+     * Sets the number of bots for the game.
      * @param numBots number of machine players (1-3)
+     * @throws IllegalArgumentException if numBots is not between 1 and 3
      */
     public void setNumBots(int numBots) {
         if (numBots < 1 || numBots > 3) {
@@ -60,7 +65,7 @@ public class GameConfig {
     }
 
     /**
-     * Gets the number of bots configured
+     * Gets the number of bots configured.
      * @return number of machine players
      */
     public int getNumBots() {
@@ -70,7 +75,8 @@ public class GameConfig {
     // ==================== GAME LOGIC METHODS ====================
 
     /**
-     * Initializes a new game with the configured number of bots
+     * Initializes a new game with the configured number of bots.
+     * Thread-safe operation that creates and starts a new game.
      */
     public void initializeGame() {
         gameLock.lock();
@@ -84,7 +90,8 @@ public class GameConfig {
     }
 
     /**
-     * Resets turn flags for human player
+     * Resets turn flags for human player.
+     * Called at the start of each turn.
      */
     private void resetTurnFlags() {
         humanHasPlayedCard = false;
@@ -92,9 +99,10 @@ public class GameConfig {
     }
 
     /**
-     * Attempts to play a card for the current player (Thread-safe)
+     * Attempts to play a card for the current player.
+     * Thread-safe operation with validation checks.
      * @param card the card to play
-     * @return true if card was played successfully
+     * @return true if card was played successfully, false otherwise
      */
     public boolean playCard(Card card) {
         gameLock.lock();
@@ -123,8 +131,9 @@ public class GameConfig {
     }
 
     /**
-     * Attempts to draw a card for the current player (Thread-safe)
-     * @return true if card was drawn successfully
+     * Attempts to draw a card for the current player.
+     * Thread-safe operation that handles deck recycling if needed.
+     * @return true if card was drawn successfully, false otherwise
      */
     public boolean drawCard() {
         gameLock.lock();
@@ -155,7 +164,8 @@ public class GameConfig {
     }
 
     /**
-     * Checks if deck is empty and recycles automatically
+     * Checks if deck is empty and recycles automatically.
+     * Called before drawing cards to ensure deck availability.
      */
     private void checkAndRecycleDeck() {
         if (game.isDeckEmpty()) {
@@ -165,7 +175,8 @@ public class GameConfig {
     }
 
     /**
-     * Completes the current turn and moves to next player (Thread-safe)
+     * Completes the current turn and moves to next player.
+     * Thread-safe operation that resets flags and advances turn.
      */
     public void completeTurn() {
         gameLock.lock();
@@ -178,8 +189,9 @@ public class GameConfig {
     }
 
     /**
-     * Processes machine player's turn asynchronously
-     * @return Future<MachineTurnResult> with the outcome
+     * Processes machine player's turn asynchronously.
+     * Executes card selection, playing, and drawing in a separate thread.
+     * @return Future with MachineTurnResult containing the outcome
      */
     public Future<MachineTurnResult> processMachineTurnAsync() {
         return gameLogicExecutor.submit(() -> {
@@ -227,7 +239,8 @@ public class GameConfig {
     }
 
     /**
-     * Processes machine player's turn (synchronous version)
+     * Processes machine player's turn synchronously.
+     * Executes card selection, playing, and drawing in current thread.
      * @return MachineTurnResult with the outcome
      */
     public MachineTurnResult processMachineTurn() {
@@ -274,9 +287,10 @@ public class GameConfig {
     }
 
     /**
-     * Validates if a move is valid asynchronously (useful for AI planning)
+     * Validates if a move is valid asynchronously.
+     * Useful for AI planning and move validation without blocking.
      * @param card the card to validate
-     * @return Future<Boolean> indicating if move is valid
+     * @return Future containing true if move is valid, false otherwise
      */
     public Future<Boolean> validateMoveAsync(Card card) {
         return validationExecutor.submit(() -> {
@@ -292,7 +306,8 @@ public class GameConfig {
     }
 
     /**
-     * Eliminates the current player (Thread-safe)
+     * Eliminates the current player.
+     * Thread-safe operation that removes player and returns cards to deck.
      * @return name of eliminated player
      */
     public String eliminateCurrentPlayer() {
@@ -314,7 +329,9 @@ public class GameConfig {
     }
 
     /**
-     * Checks if current player can make any valid move (Thread-safe)
+     * Checks if current player can make any valid move.
+     * Thread-safe operation.
+     * @return true if player can play, false otherwise
      */
     public boolean canCurrentPlayerPlay() {
         gameLock.lock();
@@ -326,7 +343,9 @@ public class GameConfig {
     }
 
     /**
-     * Checks if the game has ended (Thread-safe)
+     * Checks if the game has ended.
+     * Thread-safe operation.
+     * @return true if game is over, false otherwise
      */
     public boolean isGameOver() {
         gameLock.lock();
@@ -338,7 +357,9 @@ public class GameConfig {
     }
 
     /**
-     * Gets the winner of the game (Thread-safe)
+     * Gets the winner of the game.
+     * Thread-safe operation.
+     * @return the winning player, or null if game is not over
      */
     public Player getWinner() {
         gameLock.lock();
@@ -350,7 +371,8 @@ public class GameConfig {
     }
 
     /**
-     * Shuts down all thread pools gracefully
+     * Shuts down all thread pools gracefully.
+     * Waits for threads to terminate before forcing shutdown.
      */
     public void shutdown() {
         gameLogicExecutor.shutdown();
@@ -371,6 +393,11 @@ public class GameConfig {
 
     // ==================== GETTERS ====================
 
+    /**
+     * Gets the current game model.
+     * Thread-safe operation.
+     * @return the game model
+     */
     public GameModel getGame() {
         gameLock.lock();
         try {
@@ -380,40 +407,71 @@ public class GameConfig {
         }
     }
 
+    /**
+     * Checks if human player has played a card this turn.
+     * @return true if card was played, false otherwise
+     */
     public boolean hasHumanPlayedCard() {
         return humanHasPlayedCard;
     }
 
+    /**
+     * Checks if human player has drawn a card this turn.
+     * @return true if card was drawn, false otherwise
+     */
     public boolean hasHumanDrawnCard() {
         return humanHasDrawnCard;
     }
 
+    /**
+     * Checks if human player has completed their turn.
+     * @return true if both played and drawn, false otherwise
+     */
     public boolean isHumanTurnComplete() {
         return humanHasPlayedCard && humanHasDrawnCard;
     }
 
     /**
-     * Result class for machine turn operations
+     * Result class for machine turn operations.
+     * Contains success status, message, and played card information.
      */
     public static class MachineTurnResult {
         private final boolean success;
         private final String message;
         private final Card playedCard;
 
+        /**
+         * Creates a new MachineTurnResult.
+         * @param success true if turn was successful
+         * @param message descriptive message about the turn
+         * @param playedCard the card that was played, or null
+         */
         public MachineTurnResult(boolean success, String message, Card playedCard) {
             this.success = success;
             this.message = message;
             this.playedCard = playedCard;
         }
 
+        /**
+         * Gets the success status.
+         * @return true if turn was successful, false otherwise
+         */
         public boolean isSuccess() {
             return success;
         }
 
+        /**
+         * Gets the result message.
+         * @return descriptive message
+         */
         public String getMessage() {
             return message;
         }
 
+        /**
+         * Gets the played card.
+         * @return the card that was played, or null if no card was played
+         */
         public Card getPlayedCard() {
             return playedCard;
         }

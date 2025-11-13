@@ -7,7 +7,8 @@ import com.example.proyecto3_.model.Exceptions.*;
 import java.util.*;
 
 /**
- * Represents the game logic with Queue and Map structures
+ * Represents the game logic with Queue and Map structures.
+ * Manages players, deck, table cards, and game state.
  */
 public class GameModel {
     private Deck deck;
@@ -21,50 +22,111 @@ public class GameModel {
     private Map<String, PlayerGameStats> playerStatsMap;
 
     /**
-     * Inner class to represent game statistics
+     * Inner class to represent overall game statistics.
      */
     public static class GameStats {
         private int totalTurns;
         private int cardsPlayed;
         private int playersEliminated;
 
+        /**
+         * Creates a new GameStats instance with zero values.
+         */
         public GameStats() {
             this.totalTurns = 0;
             this.cardsPlayed = 0;
             this.playersEliminated = 0;
         }
 
+        /**
+         * Increments the total turns counter.
+         */
         public void incrementTurns() { totalTurns++; }
+
+        /**
+         * Increments the cards played counter.
+         */
         public void incrementCardsPlayed() { cardsPlayed++; }
+
+        /**
+         * Increments the players eliminated counter.
+         */
         public void incrementPlayersEliminated() { playersEliminated++; }
 
+        /**
+         * Gets the total number of turns played.
+         * @return total turns
+         */
         public int getTotalTurns() { return totalTurns; }
+
+        /**
+         * Gets the total number of cards played.
+         * @return cards played
+         */
         public int getCardsPlayed() { return cardsPlayed; }
+
+        /**
+         * Gets the number of players eliminated.
+         * @return players eliminated
+         */
         public int getPlayersEliminated() { return playersEliminated; }
     }
 
     /**
-     * Inner class for individual player statistics
+     * Inner class for individual player statistics.
      */
     public static class PlayerGameStats {
         private int cardsPlayed;
         private int turnsPlayed;
         private boolean isWinner;
 
+        /**
+         * Creates a new PlayerGameStats instance with zero values.
+         */
         public PlayerGameStats() {
             this.cardsPlayed = 0;
             this.turnsPlayed = 0;
             this.isWinner = false;
         }
 
+        /**
+         * Increments the cards played counter for this player.
+         */
         public void incrementCardsPlayed() { cardsPlayed++; }
+
+        /**
+         * Increments the turns played counter for this player.
+         */
         public void incrementTurns() { turnsPlayed++; }
+
+        /**
+         * Sets the winner status for this player.
+         * @param winner true if player won, false otherwise
+         */
         public void setWinner(boolean winner) { isWinner = winner; }
 
+        /**
+         * Gets the number of cards played by this player.
+         * @return cards played
+         */
         public int getCardsPlayed() { return cardsPlayed; }
+
+        /**
+         * Gets the number of turns played by this player.
+         * @return turns played
+         */
         public int getTurnsPlayed() { return turnsPlayed; }
+
+        /**
+         * Checks if this player is the winner.
+         * @return true if winner, false otherwise
+         */
         public boolean isWinner() { return isWinner; }
 
+        /**
+         * Returns a string representation of the player statistics.
+         * @return formatted statistics string
+         */
         @Override
         public String toString() {
             return "Cards: " + cardsPlayed + ", Turns: " + turnsPlayed +
@@ -75,8 +137,10 @@ public class GameModel {
     private GameStats stats;
 
     /**
-     * Creates a new game
+     * Creates a new game with specified number of bots.
+     * Initializes deck, players, and game structures.
      * @param numBots number of machine players (1-3)
+     * @throws IllegalArgumentException if numBots is not between 1 and 3
      */
     public GameModel(int numBots) {
         if (numBots < 1 || numBots > 3) {
@@ -110,7 +174,9 @@ public class GameModel {
     }
 
     /**
-     * Starts the game
+     * Starts the game by dealing cards and placing initial card.
+     * Deals 4 cards to each player and places one card on the table.
+     * @throws InvalidGameStateException if no players exist
      */
     public void start() {
         if (players.isEmpty()) {
@@ -137,7 +203,7 @@ public class GameModel {
     }
 
     /**
-     * Gets the game statistics
+     * Gets the game statistics.
      * @return the game stats
      */
     public GameStats getStats() {
@@ -145,8 +211,9 @@ public class GameModel {
     }
 
     /**
-     * Gets the current player
+     * Gets the current player whose turn it is.
      * @return the current player
+     * @throws InvalidGameStateException if player index is invalid
      */
     public Player getCurrentPlayer() {
         if (currentPlayerIndex < 0 || currentPlayerIndex >= players.size()) {
@@ -156,7 +223,7 @@ public class GameModel {
     }
 
     /**
-     * Gets all players
+     * Gets all players in the game.
      * @return list of players
      */
     public List<Player> getPlayers() {
@@ -164,7 +231,7 @@ public class GameModel {
     }
 
     /**
-     * Gets the current table sum
+     * Gets the current sum of card values on the table.
      * @return the sum on the table
      */
     public int getTableSum() {
@@ -172,8 +239,8 @@ public class GameModel {
     }
 
     /**
-     * Gets the top card on the table
-     * @return the top card
+     * Gets the top card on the table (last played card).
+     * @return the top card, or null if table is empty
      */
     public Card getTopCard() {
         if (tableCards.isEmpty()) {
@@ -183,7 +250,8 @@ public class GameModel {
     }
 
     /**
-     * Plays a card
+     * Plays a card from current player's hand to the table.
+     * Validates the move and updates game state.
      * @param card the card to play
      * @throws InvalidMoveException if the move is invalid
      */
@@ -226,7 +294,8 @@ public class GameModel {
     }
 
     /**
-     * Draws a card for the current player
+     * Draws a card for the current player from the deck.
+     * Automatically recycles table cards if deck is empty.
      * @return the drawn card
      * @throws DeckEmptyException if deck is empty and cannot be recycled
      */
@@ -253,7 +322,8 @@ public class GameModel {
     }
 
     /**
-     * Recycles cards from table to deck (except the last one)
+     * Recycles cards from table back to deck (except the last one).
+     * Called automatically when deck is empty.
      */
     private void recycleDeck() {
         System.out.println("🔄 Iniciando reciclaje. Cartas en mesa: " + tableCards.size());
@@ -285,7 +355,8 @@ public class GameModel {
     }
 
     /**
-     * Moves to the next player's turn using Queue
+     * Moves to the next player's turn.
+     * Skips eliminated players and updates turn queue.
      */
     public void nextTurn() {
         stats.incrementTurns();
@@ -311,8 +382,10 @@ public class GameModel {
     }
 
     /**
-     * Eliminates the current player
+     * Eliminates the current player from the game.
+     * Returns player's cards to deck and marks them as eliminated.
      * @throws NoValidCardException if player has no valid cards
+     * @throws InvalidGameStateException if player can still play
      */
     public void eliminateCurrentPlayer() throws NoValidCardException {
         Player player = getCurrentPlayer();
@@ -334,7 +407,8 @@ public class GameModel {
     }
 
     /**
-     * Checks if the game is over
+     * Checks if the game is over.
+     * Game ends when only one player remains active.
      * @return true if only one player remains, false otherwise
      */
     public boolean isGameOver() {
@@ -348,7 +422,7 @@ public class GameModel {
     }
 
     /**
-     * Gets the winner
+     * Gets the winner of the game.
      * @return the winning player, or null if game is not over
      */
     public Player getWinner() {
@@ -368,33 +442,42 @@ public class GameModel {
         return null;
     }
 
+    /**
+     * Gets the current size of the deck.
+     * @return number of cards in deck
+     */
     public int getDeckSize() {
         return deck.size();
     }
 
+    /**
+     * Checks if the deck is empty.
+     * @return true if deck has no cards, false otherwise
+     */
     public boolean isDeckEmpty() {
         return deck.isEmpty();
     }
 
     /**
-     * Gets statistics for a specific player
+     * Gets statistics for a specific player.
      * @param playerName the player's name
-     * @return the player's statistics
+     * @return the player's statistics, or null if player not found
      */
     public PlayerGameStats getPlayerStats(String playerName) {
         return playerStatsMap.get(playerName);
     }
 
     /**
-     * Gets all player statistics
-     * @return map of all player statistics
+     * Gets all player statistics.
+     * @return map of all player statistics (copy)
      */
     public Map<String, PlayerGameStats> getAllPlayerStats() {
         return new HashMap<>(playerStatsMap);
     }
 
     /**
-     * Prints all player statistics to console
+     * Prints all player statistics to console.
+     * Displays cards played, turns played, and winner status for each player.
      */
     public void printPlayerStats() {
         System.out.println("\n=== ESTADÍSTICAS POR JUGADOR ===");

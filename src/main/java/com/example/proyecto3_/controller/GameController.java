@@ -19,9 +19,8 @@ import java.util.List;
 import java.util.concurrent.*;
 
 /**
- * Controller ONLY for UI/FXML interaction
- * All game logic is delegated to GameConfig
- * Refactored with proper thread management
+ * Controller for UI and FXML interaction in the game.
+ * Delegates all game logic to GameConfig and manages thread execution for machine players.
  */
 public class GameController {
 
@@ -54,7 +53,8 @@ public class GameController {
     private volatile boolean isMachineTurnRunning = false;
 
     /**
-     * Initializes the game controller
+     * Initializes the game controller.
+     * Configures UI elements based on number of bots and starts the game.
      */
     @FXML
     public void initialize() {
@@ -68,7 +68,8 @@ public class GameController {
     }
 
     /**
-     * Handles drawing a card from the deck
+     * Handles drawing a card from the deck.
+     * Called when the player clicks the deck button.
      */
     @FXML
     private void onDrawFromDeck() {
@@ -80,7 +81,9 @@ public class GameController {
     }
 
     /**
-     * Handles card click by human player
+     * Handles card click by human player.
+     * Attempts to play the selected card and updates the UI.
+     * @param card the card clicked by the player
      */
     private void onCardClicked(Card card) {
         if (GameConfig.getInstance().playCard(card)) {
@@ -89,7 +92,8 @@ public class GameController {
     }
 
     /**
-     * Processes the current turn (human or machine)
+     * Processes the current turn for human or machine players.
+     * Checks game over condition and delegates to appropriate turn handler.
      */
     private void processTurn() {
         try {
@@ -118,7 +122,8 @@ public class GameController {
     }
 
     /**
-     * Executes a machine player's turn using a single thread with proper delays
+     * Executes a machine player's turn using a single thread with delays.
+     * Simulates thinking time and plays a card automatically.
      */
     private void executeMachineTurn() {
         if (isMachineTurnRunning) return;
@@ -189,7 +194,8 @@ public class GameController {
     }
 
     /**
-     * Handles player elimination
+     * Handles player elimination when they cannot play.
+     * Removes the player and continues to the next turn.
      */
     private void handlePlayerElimination() {
         String eliminatedPlayer = GameConfig.getInstance().eliminateCurrentPlayer();
@@ -200,7 +206,9 @@ public class GameController {
     }
 
     /**
-     * Shows the winner screen
+     * Shows the winner screen when the game ends.
+     * Transitions to the Win view with the winner's name.
+     * @throws IOException if the Win scene cannot be loaded
      */
     private void showWinner() throws IOException {
         Player winner = GameConfig.getInstance().getWinner();
@@ -219,7 +227,8 @@ public class GameController {
     }
 
     /**
-     * Shuts down all thread pools gracefully
+     * Shuts down all thread pools gracefully.
+     * Waits for threads to terminate before forcing shutdown.
      */
     private void shutdown() {
         machineTurnExecutor.shutdown();
@@ -241,7 +250,9 @@ public class GameController {
     // ==================== UI UPDATE METHODS ====================
 
     /**
-     * Configures UI visibility based on number of bots
+     * Configures UI visibility based on number of bots.
+     * Shows or hides bot areas and loads their images.
+     * @param numBots number of machine players (1-3)
      */
     private void configureUIForBots(int numBots) {
         if (bot1Area != null) {
@@ -283,8 +294,8 @@ public class GameController {
 
 
     /**
-     * Updates the entire UI with current game state
-     * Schedules periodic UI refresh every 100ms for smooth updates
+     * Updates the entire UI with current game state.
+     * Called whenever the game state changes.
      */
     private void updateUI() {
         Platform.runLater(() -> {
@@ -298,7 +309,9 @@ public class GameController {
     }
 
     /**
-     * Updates all text labels
+     * Updates all text labels with current game information.
+     * Includes table sum, top card, current turn, and statistics.
+     * @param game the current game model
      */
     private void updateLabels(GameModel game) {
         if (tableSumLabel != null) {
@@ -336,7 +349,9 @@ public class GameController {
     }
 
     /**
-     * Translates a card to Spanish format
+     * Translates a card to Spanish format.
+     * @param card the card to translate
+     * @return Spanish representation of the card
      */
     private String translateCardToSpanish(Card card) {
         String rank = translateRank(card.getRank());
@@ -345,7 +360,9 @@ public class GameController {
     }
 
     /**
-     * Translates card rank to Spanish
+     * Translates card rank to Spanish.
+     * @param rank the card rank (J, Q, K, A, or number)
+     * @return Spanish translation of the rank
      */
     private String translateRank(String rank) {
         switch (rank) {
@@ -363,7 +380,9 @@ public class GameController {
     }
 
     /**
-     * Translates suit names to Spanish (full names)
+     * Translates suit names to Spanish (full names).
+     * @param suit the suit name in English
+     * @return Spanish translation of the suit
      */
     private String translateSuitToSpanish(String suit) {
         switch (suit.toLowerCase()) {
@@ -381,7 +400,9 @@ public class GameController {
     }
 
     /**
-     * Updates the table area with card images
+     * Updates the table area with card images.
+     * Shows the top card and deck with remaining cards count.
+     * @param game the current game model
      */
     private void updateTableArea(GameModel game) {
         if (game.getTopCard() != null && tableCardButton != null) {
@@ -405,7 +426,9 @@ public class GameController {
     }
 
     /**
-     * Updates the human player's hand display
+     * Updates the human player's hand display.
+     * Creates clickable buttons for each card in the player's hand.
+     * @param game the current game model
      */
     private void updateHumanHand(GameModel game) {
         if (humanHandBox == null) return;
@@ -421,7 +444,9 @@ public class GameController {
     }
 
     /**
-     * Updates the bots' hand displays
+     * Updates the bots' hand displays.
+     * Shows card backs for each bot's hand.
+     * @param game the current game model
      */
     private void updateBotHands(GameModel game) {
         List<Player> players = game.getPlayers();
@@ -440,7 +465,9 @@ public class GameController {
     }
 
     /**
-     * Updates a single bot area
+     * Updates a single bot area with card backs.
+     * @param botArea the HBox container for the bot's cards
+     * @param bot the bot player
      */
     private void updateBotArea(HBox botArea, Player bot) {
         botArea.getChildren().clear();
@@ -455,7 +482,9 @@ public class GameController {
     // ==================== IMAGE CREATION METHODS ====================
 
     /**
-     * Creates a clickable card button with image
+     * Creates a clickable card button with image and hover effects.
+     * @param card the card to display
+     * @return button with card image
      */
     private Button createCardButton(Card card) {
         Button button = new Button();
@@ -478,7 +507,11 @@ public class GameController {
     }
 
     /**
-     * Creates an ImageView for a card
+     * Creates an ImageView for a card.
+     * @param card the card to display
+     * @param width the desired width
+     * @param height the desired height
+     * @return ImageView with the card image
      */
     private ImageView createCardImageView(Card card, double width, double height) {
         String imageName = getCardImageName(card);
@@ -501,7 +534,10 @@ public class GameController {
     }
 
     /**
-     * Creates an ImageView for card back
+     * Creates an ImageView for card back.
+     * @param width the desired width
+     * @param height the desired height
+     * @return ImageView with the card back image
      */
     private ImageView createCardBackImageView(double width, double height) {
         String imagePath = "/com/example/proyecto3_/Img/Reverso.png";
@@ -523,7 +559,9 @@ public class GameController {
     }
 
     /**
-     * Converts card to image filename
+     * Converts card to image filename.
+     * @param card the card to convert
+     * @return filename for the card image
      */
     private String getCardImageName(Card card) {
         String rank = card.getRank();
@@ -532,7 +570,9 @@ public class GameController {
     }
 
     /**
-     * Translates English suit names to Spanish for image filenames
+     * Translates English suit names to Spanish for image filenames.
+     * @param suit the suit name in English
+     * @return Spanish suit name for filename
      */
     private String translateSuit(String suit) {
         switch (suit.toLowerCase()) {
