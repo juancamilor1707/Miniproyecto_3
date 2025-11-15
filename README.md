@@ -342,7 +342,7 @@ cd sudoku-aventura-tinta
 ### Menú Principal
 <img src="src/main/resources/com/example/proyecto3_/img_readme/1.png" width="400">
 
-### Elecion de participantes
+### Eleccion de participantes
 <img src="src/main/resources/com/example/proyecto3_/img_readme/3.png" width="400">
 
 ### Mesa de Juego
