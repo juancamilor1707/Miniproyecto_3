@@ -1,12 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.text.Font?>
 
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"  fx:controller="com.example.proyecto3_.controller.GameController" prefHeight="400.0" prefWidth="600.0">
-
+<AnchorPane prefHeight="768.0" prefWidth="1321.0" styleClass="boardView" stylesheets="@Css/Styles.css" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.proyecto3_.controller.GameController">
+   <children>
+      <ImageView fitHeight="120.0" fitWidth="246.0" layoutX="51.0" layoutY="11.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@Img/TextBox.png" />
+         </image>
+      </ImageView>
+      <ImageView fitHeight="189.0" fitWidth="357.0" layoutX="962.0" layoutY="12.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@Img/TextBox.png" />
+         </image>
+      </ImageView>
+      <HBox fx:id="bot1Area" layoutX="526.0" layoutY="103.0" prefHeight="120.0" prefWidth="270.0" />
+      <HBox fx:id="humanHandBox" layoutX="531.0" layoutY="573.0" prefHeight="120.0" prefWidth="270.0" />
+      <Label fx:id="currentTurnLabel" alignment="CENTER" layoutX="57.0" layoutY="19.0" prefHeight="110.0" prefWidth="223.0" text="Turn" textFill="WHITE">
+         <font>
+            <Font name="Acme Regular" size="24.0" />
+         </font></Label>
+      <Button fx:id="tableCardButton" layoutX="625.0" layoutY="328.0" mnemonicParsing="false" text="Card" />
+      <Button fx:id="deckButton" layoutX="1096.0" layoutY="608.0" mnemonicParsing="false" onAction="#onDrawFromDeck" styleClass="card" stylesheets="@Css/Styles.css" text="Draw" textFill="WHITE">
+         <font>
+            <Font name="Acme Regular" size="18.0" />
+         </font></Button>
+      <HBox fx:id="bot2Area" layoutX="51.0" layoutY="340.0" prefHeight="120.0" prefWidth="270.0" />
+      <HBox fx:id="bot3Area" layoutX="981.0" layoutY="340.0" prefHeight="120.0" prefWidth="270.0" />
+      <Label fx:id="statsLabel" layoutX="1017.0" layoutY="58.0" text="Stats" textFill="WHITE">
+         <font>
+            <Font name="Acme Regular" size="18.0" />
+         </font></Label>
+      <Label fx:id="tableSumLabel" layoutX="1014.0" layoutY="91.0" text="tableSum" textFill="WHITE">
+         <font>
+            <Font name="Acme Regular" size="18.0" />
+         </font></Label>
+      <Label fx:id="topCardLabel" layoutX="1014.0" layoutY="124.0" text="topCard" textFill="WHITE">
+         <font>
+            <Font name="Acme Regular" size="18.0" />
+         </font></Label>
+      <Label layoutX="120.0" layoutY="26.0" text="Turno Actual:" textFill="WHITE">
+         <font>
+            <Font name="Acme Regular" size="18.0" />
+         </font>
+      </Label>
+      <ImageView fx:id="bot2Imageview" fitHeight="100.0" fitWidth="100.0" layoutX="166.0" layoutY="240.0" pickOnBounds="true" preserveRatio="true" />
+      <ImageView fx:id="bot1Imageview" fitHeight="100.0" fitWidth="100.0" layoutX="625.0" layoutY="8.0" pickOnBounds="true" preserveRatio="true" />
+      <ImageView fx:id="bot3Imageview" fitHeight="100.0" fitWidth="100.0" layoutX="1091.0" layoutY="240.0" pickOnBounds="true" preserveRatio="true" />
+   </children>
 </AnchorPane>
